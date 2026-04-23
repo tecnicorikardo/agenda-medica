@@ -1,0 +1,30 @@
+# Ambiente virtual
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Variáveis de ambiente — NUNCA subir
+.env
+
+# Chaves VAPID — ficam nas variáveis do Railway
+private_key.pem
+public_key.pem
+
+# Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db

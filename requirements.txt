@@ -1,0 +1,18 @@
+fastapi==0.115.12
+uvicorn[standard]==0.34.2
+SQLAlchemy==2.0.41
+psycopg2-binary==2.9.10; python_version < "3.14"
+psycopg[binary]==3.3.3; python_version >= "3.14"
+pydantic==2.11.4
+pydantic-settings==2.9.1
+python-jose[cryptography]==3.5.0
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1
+python-dotenv==1.1.0
+email-validator==2.2.0
+tzdata==2025.2
+reportlab==4.2.5
+python-multipart==0.0.20
+aiosmtplib==3.0.2
+openpyxl==3.1.5
+pywebpush==2.0.0
