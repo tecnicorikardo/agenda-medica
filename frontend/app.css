@@ -460,10 +460,13 @@ a{color:inherit}
 }
 
 .login-logo {
-  width: 64px;
-  height: 64px;
-  border-radius: 18px;
-  box-shadow: 0 8px 24px rgba(110,168,255,.35);
+  width: 96px;
+  height: 96px;
+  border-radius: 26px;
+  box-shadow:
+    0 0 0 6px rgba(110,168,255,.15),
+    0 0 0 12px rgba(110,168,255,.07),
+    0 12px 40px rgba(110,168,255,.4);
   animation: logoPop .6s .1s cubic-bezier(.34,1.56,.64,1) both;
 }
 
@@ -1525,3 +1528,80 @@ body.light .theme-option.theme-active {
 body.light .pac-btn:hover         { background: rgba(37,99,235,.08); }
 body.light .pac-btn-wa:hover      { background: rgba(22,163,74,.08); }
 body.light .pac-btn-danger:hover  { background: rgba(220,38,38,.08); }
+
+/* =============================================
+   LOGIN — EXTRAS (senha, lembrar, esqueci, bio)
+   ============================================= */
+.login-senha-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.login-senha-wrap .input {
+  padding-right: 42px;
+}
+.btn-eye {
+  position: absolute;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 16px;
+  padding: 4px;
+  color: var(--muted);
+  line-height: 1;
+}
+.btn-eye:hover { color: var(--text); }
+
+.login-extras {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 2px;
+}
+.login-lembrar {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--muted);
+  cursor: pointer;
+  user-select: none;
+}
+.btn-link {
+  background: none;
+  border: none;
+  color: var(--brand);
+  font-size: 13px;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.btn-link:hover { opacity: .8; }
+.btn-link:disabled { opacity: .5; cursor: not-allowed; }
+
+.login-bio-btn {
+  width: 100%;
+  margin-top: 10px;
+  padding: 12px;
+  font-size: 14px;
+  font-weight: 600;
+  border-radius: 14px;
+  border-color: rgba(110,168,255,.3);
+  background: rgba(110,168,255,.07);
+  color: var(--brand);
+  gap: 8px;
+  justify-content: center;
+}
+.login-bio-btn:hover {
+  background: rgba(110,168,255,.14);
+}
+
+/* Modo claro */
+body.light .btn-eye { color: var(--muted); }
+body.light .login-bio-btn {
+  border-color: rgba(37,99,235,.25);
+  background: rgba(37,99,235,.05);
+  color: var(--brand);
+}

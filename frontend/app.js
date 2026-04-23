@@ -418,21 +418,107 @@ function showWelcomeScreen(me) {
 }
 
 function loginPage() {
+  const savedEmail = localStorage.getItem("saved_email") || "";
+
   const email = h("input", {
     class: "input",
     type: "email",
     placeholder: "email@exemplo.com",
     required: "true",
     autocomplete: "email",
+    value: savedEmail,
   });
   const senha = h("input", {
-    class: "input",
+    class: "input login-senha-input",
     type: "password",
     placeholder: "••••••••",
     required: "true",
     autocomplete: "current-password",
   });
+
+  // Mostrar/ocultar senha
+  const btnEye = h("button", { class: "btn-eye", type: "button", tabindex: "-1" }, ["👁"]);
+  let senhaVisivel = false;
+  btnEye.onclick = () => {
+    senhaVisivel = !senhaVisivel;
+    senha.type = senhaVisivel ? "text" : "password";
+    btnEye.textContent = senhaVisivel ? "🙈" : "👁";
+  };
+
+  const chkLembrar = h("input", { type: "checkbox", id: "lembrar", class: "lembrete-chk" });
+  if (savedEmail) chkLembrar.checked = true;
+
   const btn = h("button", { class: "btn primary login-btn", type: "submit" }, ["Entrar"]);
+
+  // ── Biometria (WebAuthn) ──────────────────────────────────────────────────
+  const btnBio = h("button", {
+    class: "btn login-bio-btn",
+    type: "button",
+    style: "display:none",
+    title: "Entrar com biometria",
+  }, ["🔐 Biometria / Face ID"]);
+
+  // Verifica se WebAuthn está disponível e se há credencial salva
+  async function checkBiometria() {
+    if (!window.PublicKeyCredential) return;
+    const credId = localStorage.getItem("bio_cred_id");
+    if (!credId) return;
+    const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+    if (available) btnBio.style.display = "";
+  }
+  checkBiometria();
+
+  btnBio.onclick = async () => {
+    const savedMail = localStorage.getItem("saved_email");
+    if (!savedMail) { toast("Salve seu e-mail primeiro fazendo login normal."); return; }
+    const savedPwd = localStorage.getItem("bio_pwd");
+    if (!savedPwd) { toast("Faça login normal uma vez para ativar a biometria."); return; }
+
+    try {
+      // Pede verificação biométrica ao dispositivo
+      const cred = await navigator.credentials.get({
+        publicKey: {
+          challenge: crypto.getRandomValues(new Uint8Array(32)),
+          rpId: location.hostname,
+          allowCredentials: [{
+            id: Uint8Array.from(atob(localStorage.getItem("bio_cred_id")), c => c.charCodeAt(0)),
+            type: "public-key",
+          }],
+          userVerification: "required",
+          timeout: 60000,
+        },
+      });
+      if (cred) {
+        // Biometria confirmada — faz login com credenciais salvas
+        email.value = savedMail;
+        senha.value = atob(savedPwd);
+        btn.click();
+      }
+    } catch (err) {
+      if (err.name !== "NotAllowedError") toast("Biometria falhou: " + err.message);
+    }
+  };
+
+  // ── Esqueci minha senha ───────────────────────────────────────────────────
+  const linkEsqueci = h("button", { class: "btn-link", type: "button" }, ["Esqueci minha senha"]);
+  linkEsqueci.onclick = async () => {
+    const mail = email.value.trim();
+    if (!mail) { toast("Digite seu e-mail primeiro."); email.focus(); return; }
+    linkEsqueci.textContent = "Enviando...";
+    linkEsqueci.disabled = true;
+    try {
+      await api("/auth/esqueci-senha", {
+        method: "POST",
+        body: JSON.stringify({ email: mail }),
+      });
+      toast("✅ Se o e-mail existir, você receberá uma senha temporária.");
+    } catch {
+      toast("Erro ao enviar. Tente novamente.");
+    } finally {
+      linkEsqueci.textContent = "Esqueci minha senha";
+      linkEsqueci.disabled = false;
+    }
+  };
 
   const app = document.getElementById("app");
   app.innerHTML = "";
@@ -448,6 +534,49 @@ function loginPage() {
           method: "POST",
           body: JSON.stringify({ email: email.value, senha: senha.value }),
         });
+
+        // Lembrar e-mail
+        if (chkLembrar.checked) {
+          localStorage.setItem("saved_email", email.value);
+        } else {
+          localStorage.removeItem("saved_email");
+        }
+
+        // Registra biometria se disponível e ainda não registrada
+        if (window.PublicKeyCredential && !localStorage.getItem("bio_cred_id")) {
+          try {
+            const avail = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+            if (avail) {
+              const cred = await navigator.credentials.create({
+                publicKey: {
+                  challenge: crypto.getRandomValues(new Uint8Array(32)),
+                  rp: { name: "Agenda Médica", id: location.hostname },
+                  user: {
+                    id: new TextEncoder().encode(email.value),
+                    name: email.value,
+                    displayName: email.value,
+                  },
+                  pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+                  authenticatorSelection: {
+                    authenticatorAttachment: "platform",
+                    userVerification: "required",
+                  },
+                  timeout: 60000,
+                },
+              });
+              if (cred) {
+                const credIdB64 = btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));
+                localStorage.setItem("bio_cred_id", credIdB64);
+                localStorage.setItem("bio_pwd", btoa(senha.value));
+                toast("🔐 Biometria ativada para próximos acessos!");
+              }
+            }
+          } catch { /* biometria opcional — ignora erros */ }
+        } else if (localStorage.getItem("bio_cred_id")) {
+          // Atualiza senha salva
+          localStorage.setItem("bio_pwd", btoa(senha.value));
+        }
+
         showWelcomeScreen(me);
       } catch (err) {
         toast(err.message);
@@ -468,10 +597,18 @@ function loginPage() {
       ]),
       h("div", { class: "login-field" }, [
         h("label", { class: "label" }, ["Senha"]),
-        senha,
+        h("div", { class: "login-senha-wrap" }, [senha, btnEye]),
+      ]),
+      h("div", { class: "login-extras" }, [
+        h("label", { class: "login-lembrar" }, [
+          chkLembrar,
+          h("span", {}, ["Lembrar e-mail"]),
+        ]),
+        linkEsqueci,
       ]),
     ]),
     btn,
+    btnBio,
   ]);
 
   const wrap = h("div", { class: "login-page" }, [
@@ -481,7 +618,7 @@ function loginPage() {
   ]);
 
   app.append(wrap);
-  setTimeout(() => email.focus(), 80);
+  setTimeout(() => { if (!savedEmail) email.focus(); else senha.focus(); }, 80);
 }
 
 async function ensureMe() {
