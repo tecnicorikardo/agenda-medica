@@ -244,3 +244,32 @@ async def cadastro(request: Request, response: Response, db: Session = Depends(g
         max_age=settings.access_token_expires_minutes * 60,
     )
     return MeOut(usuario=_user_to_out(user))
+
+
+@router.post("/alterar-senha")
+async def alterar_senha(
+    request: Request,
+    db: Session = Depends(get_db),
+    user=Depends(get_current_user),
+) -> dict:
+    """Altera a senha do usuário logado."""
+    from backend.app.core.security import hash_password, verify_password
+
+    body = await request.json()
+    senha_atual = (body.get("senha_atual") or "").strip()
+    nova_senha  = (body.get("nova_senha")  or "").strip()
+    confirma    = (body.get("confirma")    or "").strip()
+
+    if not senha_atual or not nova_senha:
+        raise HTTPException(status_code=400, detail="Preencha todos os campos.")
+    if not verify_password(senha_atual, user.senha_hash):
+        raise HTTPException(status_code=400, detail="Senha atual incorreta.")
+    if len(nova_senha) < 6:
+        raise HTTPException(status_code=400, detail="Nova senha deve ter pelo menos 6 caracteres.")
+    if nova_senha != confirma:
+        raise HTTPException(status_code=400, detail="As senhas não coincidem.")
+
+    user.senha_hash = hash_password(nova_senha)
+    db.add(user)
+    db.commit()
+    return {"ok": True}

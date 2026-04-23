@@ -1746,6 +1746,59 @@ async function perfilPage() {
           h("div", { class: "row", style: "margin-top:8px" }, [btnSalvar]),
         ]),
       ]),
+      // ── Card alterar senha ───────────────────────────────────────────────
+      h("div", { class: "card col-12" }, [
+        h("div", { class: "row", style: "margin-bottom:14px" }, [
+          h("h2", { style: "margin:0" }, ["🔑 Alterar senha"]),
+        ]),
+        h("form", {
+          class: "form",
+          onsubmit: async (e) => {
+            e.preventDefault();
+            const senhaAtual = e.target.querySelector("#f-senha-atual").value;
+            const novaSenha  = e.target.querySelector("#f-nova-senha").value;
+            const confirma   = e.target.querySelector("#f-confirma").value;
+            const btn = e.target.querySelector("button[type=submit]");
+            btn.disabled = true; btn.textContent = "Salvando...";
+            try {
+              await api("/auth/alterar-senha", {
+                method: "POST",
+                body: JSON.stringify({ senha_atual: senhaAtual, nova_senha: novaSenha, confirma }),
+              });
+              toast("✅ Senha alterada com sucesso!");
+              e.target.reset();
+              // Atualiza biometria com nova senha
+              if (localStorage.getItem("bio_cred_id")) {
+                localStorage.setItem("bio_pwd", btoa(novaSenha));
+              }
+            } catch (err) {
+              toast(err.message);
+            } finally {
+              btn.disabled = false; btn.textContent = "Alterar senha";
+            }
+          },
+        }, [
+          h("div", { class: "row" }, [
+            h("div", { style: "flex:1" }, [
+              h("label", { class: "label" }, ["Senha atual"]),
+              h("input", { class: "input", type: "password", id: "f-senha-atual", placeholder: "••••••••", autocomplete: "current-password" }),
+            ]),
+          ]),
+          h("div", { class: "row" }, [
+            h("div", { style: "flex:1" }, [
+              h("label", { class: "label" }, ["Nova senha"]),
+              h("input", { class: "input", type: "password", id: "f-nova-senha", placeholder: "mínimo 6 caracteres", autocomplete: "new-password" }),
+            ]),
+            h("div", { style: "flex:1" }, [
+              h("label", { class: "label" }, ["Confirmar nova senha"]),
+              h("input", { class: "input", type: "password", id: "f-confirma", placeholder: "repita a nova senha", autocomplete: "new-password" }),
+            ]),
+          ]),
+          h("div", { class: "row", style: "margin-top:4px" }, [
+            h("button", { class: "btn primary", type: "submit" }, ["Alterar senha"]),
+          ]),
+        ]),
+      ]),
       // ── Card tema ────────────────────────────────────────────────────────
       h("div", { class: "card col-12 theme-card" }, [
         h("div", { class: "row", style: "margin-bottom:10px" }, [
