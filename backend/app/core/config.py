@@ -44,6 +44,9 @@ class Settings(BaseSettings):
     vapid_private_key: str = Field(default="", alias="VAPID_PRIVATE_KEY")
     vapid_mailto: str = Field(default="mailto:admin@example.com", alias="VAPID_MAILTO")
 
+    # Resend API (alternativa ao SMTP para produção em cloud)
+    resend_api_key: str = Field(default="", alias="RESEND_API_KEY")
+
 
 @lru_cache
 def get_settings() -> Settings:

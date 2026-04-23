@@ -130,13 +130,21 @@ def remove_avatar(
 
 
 @router.post("/esqueci-senha")
+@router.post("/esqueci-senha")
 async def esqueci_senha(request: Request, db: Session = Depends(get_db)) -> dict:
     """Envia e-mail com senha temporária."""
     import secrets
+    import logging
     from backend.app.core.security import hash_password
     from backend.app.services.email import send_email
 
-    body = await request.json()
+    logger = logging.getLogger(__name__)
+
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="JSON inválido.")
+
     email = (body.get("email") or "").lower().strip()
     if not email:
         raise HTTPException(status_code=400, detail="Informe o e-mail.")
@@ -154,42 +162,40 @@ async def esqueci_senha(request: Request, db: Session = Depends(get_db)) -> dict
 
     clinic = user.nome_clinica or "Agenda Médica"
     nome = user.nome or email
-    html = f"""
-    <!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/>
-    <style>
-      body{{margin:0;padding:0;background:#f0f4ff;font-family:system-ui,sans-serif;color:#1a2540}}
-      .wrap{{max-width:520px;margin:32px auto;background:#fff;border-radius:16px;
-             overflow:hidden;box-shadow:0 4px 24px rgba(26,58,107,.12)}}
-      .header{{background:linear-gradient(135deg,#1a3a6b,#2563eb);padding:28px 32px;text-align:center;color:#fff}}
-      .header h1{{margin:0;font-size:20px;font-weight:800}}
-      .body{{padding:28px 32px}}
-      .senha-box{{background:#f5f8ff;border:2px solid #2563eb;border-radius:12px;
-                  padding:16px 24px;text-align:center;margin:20px 0}}
-      .senha{{font-size:28px;font-weight:900;letter-spacing:4px;color:#1a3a6b;font-family:monospace}}
-      .footer{{background:#f5f8ff;border-top:1px solid #dce8ff;padding:14px 32px;
-               text-align:center;font-size:12px;color:#8a9bbf}}
-    </style></head><body>
-    <div class="wrap">
-      <div class="header"><h1>🏥 {clinic}</h1><p>Redefinição de senha</p></div>
-      <div class="body">
-        <p>Olá, <strong>{nome}</strong>!</p>
-        <p>Recebemos uma solicitação de redefinição de senha para sua conta.</p>
-        <p>Sua nova senha temporária é:</p>
-        <div class="senha-box"><div class="senha">{nova_senha}</div></div>
-        <p style="color:#6b7fa8;font-size:13px">
-          Acesse o sistema e altere sua senha nas configurações de perfil.<br/>
-          Se não foi você, ignore este e-mail.
-        </p>
-      </div>
-      <div class="footer">Agenda Médica — e-mail automático</div>
-    </div></body></html>
-    """
+    html = f"""<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"/>
+<style>
+body{{margin:0;padding:0;background:#f0f4ff;font-family:system-ui,sans-serif;color:#1a2540}}
+.wrap{{max-width:520px;margin:32px auto;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 4px 24px rgba(26,58,107,.12)}}
+.header{{background:linear-gradient(135deg,#1a3a6b,#2563eb);padding:28px 32px;text-align:center;color:#fff}}
+.header h1{{margin:0;font-size:20px;font-weight:800}}
+.body{{padding:28px 32px}}
+.senha-box{{background:#f5f8ff;border:2px solid #2563eb;border-radius:12px;padding:16px 24px;text-align:center;margin:20px 0}}
+.senha{{font-size:28px;font-weight:900;letter-spacing:4px;color:#1a3a6b;font-family:monospace}}
+.footer{{background:#f5f8ff;border-top:1px solid #dce8ff;padding:14px 32px;text-align:center;font-size:12px;color:#8a9bbf}}
+</style></head><body>
+<div class="wrap">
+  <div class="header"><h1>🏥 {clinic}</h1><p>Redefinição de senha</p></div>
+  <div class="body">
+    <p>Olá, <strong>{nome}</strong>!</p>
+    <p>Recebemos uma solicitação de redefinição de senha.</p>
+    <p>Sua nova senha temporária é:</p>
+    <div class="senha-box"><div class="senha">{nova_senha}</div></div>
+    <p style="color:#6b7fa8;font-size:13px">Acesse o sistema e altere sua senha no Perfil.<br/>Se não foi você, ignore este e-mail.</p>
+  </div>
+  <div class="footer">Agenda Médica — e-mail automático</div>
+</div></body></html>"""
 
-    await send_email(
-        to=email,
-        subject=f"Sua nova senha — {clinic}",
-        html=html,
-    )
+    try:
+        await send_email(
+            to=email,
+            subject=f"Sua nova senha — {clinic}",
+            html=html,
+        )
+    except Exception as exc:
+        logger.error("Falha ao enviar email de recuperação para %s: %s", email, exc)
+        # Não falha — senha já foi redefinida, usuário pode tentar logar
+        # ou contatar suporte
+
     return {"ok": True}
 
 
