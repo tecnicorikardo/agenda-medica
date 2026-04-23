@@ -1315,14 +1315,16 @@ a{color:inherit}
   align-items: flex-start;
   width: 100%;
 }
-.dtp-wrap .dp-wrap { flex: 1; }
+.dtp-wrap .dp-wrap { flex: 1; min-width: 0; }
 .dtp-time {
-  width: 100px !important;
+  width: 110px !important;
+  min-width: 110px !important;
   flex-shrink: 0;
   text-align: center;
   font-size: 15px;
   font-weight: 700;
   letter-spacing: 1px;
+  padding: 10px 8px !important;
 }
 
 /* =============================================
@@ -1605,3 +1607,17 @@ body.light .login-bio-btn {
   background: rgba(37,99,235,.05);
   color: var(--brand);
 }
+
+/* Toggle login ↔ cadastro */
+.login-toggle-row {
+  text-align: center;
+  padding: 14px 0 4px;
+  font-size: 13px;
+  border-top: 1px solid rgba(32,50,85,.4);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+body.light .login-toggle-row { border-color: rgba(200,210,230,.5); }

@@ -419,206 +419,204 @@ function showWelcomeScreen(me) {
 
 function loginPage() {
   const savedEmail = localStorage.getItem("saved_email") || "";
-
-  const email = h("input", {
-    class: "input",
-    type: "email",
-    placeholder: "email@exemplo.com",
-    required: "true",
-    autocomplete: "email",
-    value: savedEmail,
-  });
-  const senha = h("input", {
-    class: "input login-senha-input",
-    type: "password",
-    placeholder: "••••••••",
-    required: "true",
-    autocomplete: "current-password",
-  });
-
-  // Mostrar/ocultar senha
-  const btnEye = h("button", { class: "btn-eye", type: "button", tabindex: "-1" }, ["👁"]);
-  let senhaVisivel = false;
-  btnEye.onclick = () => {
-    senhaVisivel = !senhaVisivel;
-    senha.type = senhaVisivel ? "text" : "password";
-    btnEye.textContent = senhaVisivel ? "🙈" : "👁";
-  };
-
-  const chkLembrar = h("input", { type: "checkbox", id: "lembrar", class: "lembrete-chk" });
-  if (savedEmail) chkLembrar.checked = true;
-
-  const btn = h("button", { class: "btn primary login-btn", type: "submit" }, ["Entrar"]);
-
-  // ── Biometria (WebAuthn) ──────────────────────────────────────────────────
-  const btnBio = h("button", {
-    class: "btn login-bio-btn",
-    type: "button",
-    style: "display:none",
-    title: "Entrar com biometria",
-  }, ["🔐 Biometria / Face ID"]);
-
-  // Verifica se WebAuthn está disponível e se há credencial salva
-  async function checkBiometria() {
-    if (!window.PublicKeyCredential) return;
-    const credId = localStorage.getItem("bio_cred_id");
-    if (!credId) return;
-    const available = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-    if (available) btnBio.style.display = "";
-  }
-  checkBiometria();
-
-  btnBio.onclick = async () => {
-    const savedMail = localStorage.getItem("saved_email");
-    if (!savedMail) { toast("Salve seu e-mail primeiro fazendo login normal."); return; }
-    const savedPwd = localStorage.getItem("bio_pwd");
-    if (!savedPwd) { toast("Faça login normal uma vez para ativar a biometria."); return; }
-
-    try {
-      // Pede verificação biométrica ao dispositivo
-      const cred = await navigator.credentials.get({
-        publicKey: {
-          challenge: crypto.getRandomValues(new Uint8Array(32)),
-          rpId: location.hostname,
-          allowCredentials: [{
-            id: Uint8Array.from(atob(localStorage.getItem("bio_cred_id")), c => c.charCodeAt(0)),
-            type: "public-key",
-          }],
-          userVerification: "required",
-          timeout: 60000,
-        },
-      });
-      if (cred) {
-        // Biometria confirmada — faz login com credenciais salvas
-        email.value = savedMail;
-        senha.value = atob(savedPwd);
-        btn.click();
-      }
-    } catch (err) {
-      if (err.name !== "NotAllowedError") toast("Biometria falhou: " + err.message);
-    }
-  };
-
-  // ── Esqueci minha senha ───────────────────────────────────────────────────
-  const linkEsqueci = h("button", { class: "btn-link", type: "button" }, ["Esqueci minha senha"]);
-  linkEsqueci.onclick = async () => {
-    const mail = email.value.trim();
-    if (!mail) { toast("Digite seu e-mail primeiro."); email.focus(); return; }
-    linkEsqueci.textContent = "Enviando...";
-    linkEsqueci.disabled = true;
-    try {
-      await api("/auth/esqueci-senha", {
-        method: "POST",
-        body: JSON.stringify({ email: mail }),
-      });
-      toast("✅ Se o e-mail existir, você receberá uma senha temporária.");
-    } catch {
-      toast("Erro ao enviar. Tente novamente.");
-    } finally {
-      linkEsqueci.textContent = "Esqueci minha senha";
-      linkEsqueci.disabled = false;
-    }
-  };
+  let modoCadastro = false;
 
   const app = document.getElementById("app");
   app.innerHTML = "";
 
-  const form = h("form", {
-    class: "login-form",
-    onsubmit: async (e) => {
-      e.preventDefault();
-      btn.disabled = true;
-      btn.textContent = "Entrando...";
-      try {
-        const me = await api("/auth/login", {
-          method: "POST",
-          body: JSON.stringify({ email: email.value, senha: senha.value }),
-        });
+  function render() {
+    app.innerHTML = "";
 
-        // Lembrar e-mail
-        if (chkLembrar.checked) {
-          localStorage.setItem("saved_email", email.value);
-        } else {
-          localStorage.removeItem("saved_email");
-        }
+    const email = h("input", {
+      class: "input", type: "email",
+      placeholder: "email@exemplo.com",
+      autocomplete: "email",
+      value: savedEmail,
+    });
+    const senha = h("input", {
+      class: "input login-senha-input", type: "password",
+      placeholder: "••••••••",
+      autocomplete: modoCadastro ? "new-password" : "current-password",
+    });
+    const btnEye = h("button", { class: "btn-eye", type: "button", tabindex: "-1" }, ["👁"]);
+    let senhaVisivel = false;
+    btnEye.onclick = () => {
+      senhaVisivel = !senhaVisivel;
+      senha.type = senhaVisivel ? "text" : "password";
+      btnEye.textContent = senhaVisivel ? "🙈" : "👁";
+    };
 
-        // Registra biometria se disponível e ainda não registrada
-        if (window.PublicKeyCredential && !localStorage.getItem("bio_cred_id")) {
-          try {
-            const avail = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
-            if (avail) {
-              const cred = await navigator.credentials.create({
-                publicKey: {
-                  challenge: crypto.getRandomValues(new Uint8Array(32)),
-                  rp: { name: "Agenda Médica", id: location.hostname },
-                  user: {
-                    id: new TextEncoder().encode(email.value),
-                    name: email.value,
-                    displayName: email.value,
-                  },
-                  pubKeyCredParams: [{ type: "public-key", alg: -7 }],
-                  authenticatorSelection: {
-                    authenticatorAttachment: "platform",
-                    userVerification: "required",
-                  },
-                  timeout: 60000,
-                },
-              });
-              if (cred) {
-                const credIdB64 = btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));
-                localStorage.setItem("bio_cred_id", credIdB64);
-                localStorage.setItem("bio_pwd", btoa(senha.value));
-                toast("🔐 Biometria ativada para próximos acessos!");
-              }
+    // Campos extras do cadastro
+    const nomeField = modoCadastro ? h("div", { class: "login-field" }, [
+      h("label", { class: "label" }, ["Nome completo"]),
+      h("input", { class: "input", type: "text", placeholder: "Dr(a). Nome Sobrenome", id: "cad-nome" }),
+    ]) : null;
+
+    const senhaConfField = modoCadastro ? h("div", { class: "login-field" }, [
+      h("label", { class: "label" }, ["Confirmar senha"]),
+      h("input", { class: "input", type: "password", placeholder: "••••••••", id: "cad-senha2" }),
+    ]) : null;
+
+    const chkLembrar = h("input", { type: "checkbox", class: "lembrete-chk" });
+    if (savedEmail) chkLembrar.checked = true;
+
+    const btn = h("button", { class: "btn primary login-btn", type: "submit" },
+      [modoCadastro ? "Criar conta" : "Entrar"]);
+
+    // Biometria (só no login)
+    const btnBio = h("button", {
+      class: "btn login-bio-btn", type: "button", style: "display:none",
+    }, ["🔐 Biometria / Face ID"]);
+
+    if (!modoCadastro) {
+      (async () => {
+        if (!window.PublicKeyCredential) return;
+        const credId = localStorage.getItem("bio_cred_id");
+        if (!credId) return;
+        const ok = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+        if (ok) btnBio.style.display = "";
+      })();
+
+      btnBio.onclick = async () => {
+        const savedMail = localStorage.getItem("saved_email");
+        const savedPwd  = localStorage.getItem("bio_pwd");
+        if (!savedMail || !savedPwd) { toast("Faça login normal uma vez para ativar a biometria."); return; }
+        try {
+          const cred = await navigator.credentials.get({
+            publicKey: {
+              challenge: crypto.getRandomValues(new Uint8Array(32)),
+              rpId: location.hostname,
+              allowCredentials: [{ id: Uint8Array.from(atob(localStorage.getItem("bio_cred_id")), c => c.charCodeAt(0)), type: "public-key" }],
+              userVerification: "required", timeout: 60000,
+            },
+          });
+          if (cred) { email.value = savedMail; senha.value = atob(savedPwd); btn.click(); }
+        } catch (err) { if (err.name !== "NotAllowedError") toast("Biometria falhou: " + err.message); }
+      };
+    }
+
+    // Esqueci senha (só no login)
+    const linkEsqueci = !modoCadastro ? h("button", { class: "btn-link", type: "button" }, ["Esqueci minha senha"]) : null;
+    if (linkEsqueci) {
+      linkEsqueci.onclick = async () => {
+        const mail = email.value.trim();
+        if (!mail) { toast("Digite seu e-mail primeiro."); email.focus(); return; }
+        linkEsqueci.textContent = "Enviando...";
+        linkEsqueci.disabled = true;
+        try {
+          await api("/auth/esqueci-senha", { method: "POST", body: JSON.stringify({ email: mail }) });
+          toast("✅ Se o e-mail existir, você receberá uma senha temporária.");
+        } catch { toast("Erro ao enviar. Tente novamente."); }
+        finally { linkEsqueci.textContent = "Esqueci minha senha"; linkEsqueci.disabled = false; }
+      };
+    }
+
+    // Toggle login ↔ cadastro
+    const linkToggle = h("div", { class: "login-toggle-row" }, [
+      h("span", { class: "muted" }, [modoCadastro ? "Já tem conta? " : "Não tem conta? "]),
+      h("button", {
+        class: "btn-link", type: "button",
+        onclick: () => { modoCadastro = !modoCadastro; render(); },
+      }, [modoCadastro ? "Fazer login" : "Criar conta grátis"]),
+    ]);
+
+    const form = h("form", {
+      class: "login-form",
+      onsubmit: async (e) => {
+        e.preventDefault();
+        btn.disabled = true;
+        btn.textContent = modoCadastro ? "Criando..." : "Entrando...";
+
+        try {
+          if (modoCadastro) {
+            // Cadastro
+            const nomeVal  = document.getElementById("cad-nome")?.value.trim() || "";
+            const senha2   = document.getElementById("cad-senha2")?.value || "";
+            if (senha.value !== senha2) { toast("As senhas não coincidem."); return; }
+            const me = await api("/auth/cadastro", {
+              method: "POST",
+              body: JSON.stringify({ nome: nomeVal, email: email.value, senha: senha.value }),
+            });
+            localStorage.setItem("saved_email", email.value);
+            showWelcomeScreen(me);
+          } else {
+            // Login
+            const me = await api("/auth/login", {
+              method: "POST",
+              body: JSON.stringify({ email: email.value, senha: senha.value }),
+            });
+            if (chkLembrar.checked) localStorage.setItem("saved_email", email.value);
+            else localStorage.removeItem("saved_email");
+
+            // Registra biometria se disponível
+            if (window.PublicKeyCredential && !localStorage.getItem("bio_cred_id")) {
+              try {
+                const avail = await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
+                if (avail) {
+                  const cred = await navigator.credentials.create({
+                    publicKey: {
+                      challenge: crypto.getRandomValues(new Uint8Array(32)),
+                      rp: { name: "Agenda Médica", id: location.hostname },
+                      user: { id: new TextEncoder().encode(email.value), name: email.value, displayName: email.value },
+                      pubKeyCredParams: [{ type: "public-key", alg: -7 }],
+                      authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+                      timeout: 60000,
+                    },
+                  });
+                  if (cred) {
+                    localStorage.setItem("bio_cred_id", btoa(String.fromCharCode(...new Uint8Array(cred.rawId))));
+                    localStorage.setItem("bio_pwd", btoa(senha.value));
+                    toast("🔐 Biometria ativada!");
+                  }
+                }
+              } catch { /* opcional */ }
+            } else if (localStorage.getItem("bio_cred_id")) {
+              localStorage.setItem("bio_pwd", btoa(senha.value));
             }
-          } catch { /* biometria opcional — ignora erros */ }
-        } else if (localStorage.getItem("bio_cred_id")) {
-          // Atualiza senha salva
-          localStorage.setItem("bio_pwd", btoa(senha.value));
+
+            showWelcomeScreen(me);
+          }
+        } catch (err) {
+          toast(err.message);
+        } finally {
+          btn.disabled = false;
+          btn.textContent = modoCadastro ? "Criar conta" : "Entrar";
         }
-
-        showWelcomeScreen(me);
-      } catch (err) {
-        toast(err.message);
-        btn.disabled = false;
-        btn.textContent = "Entrar";
-      }
-    },
-  }, [
-    h("div", { class: "login-logo-wrap" }, [
-      h("img", { src: "/assets/logo.png", class: "login-logo", alt: "Logo" }),
-    ]),
-    h("div", { class: "login-title" }, ["Agenda Médica"]),
-    h("div", { class: "login-sub" }, ["Acesso seguro ao seu consultório"]),
-    h("div", { class: "login-fields" }, [
-      h("div", { class: "login-field" }, [
-        h("label", { class: "label" }, ["E-mail"]),
-        email,
+      },
+    }, [
+      h("div", { class: "login-logo-wrap" }, [
+        h("img", { src: "/assets/logo.png", class: "login-logo", alt: "Logo" }),
       ]),
-      h("div", { class: "login-field" }, [
-        h("label", { class: "label" }, ["Senha"]),
-        h("div", { class: "login-senha-wrap" }, [senha, btnEye]),
-      ]),
-      h("div", { class: "login-extras" }, [
-        h("label", { class: "login-lembrar" }, [
-          chkLembrar,
-          h("span", {}, ["Lembrar e-mail"]),
+      h("div", { class: "login-title" }, ["Agenda Médica"]),
+      h("div", { class: "login-sub" }, [modoCadastro ? "Crie sua conta gratuitamente" : "Acesso seguro ao seu consultório"]),
+      h("div", { class: "login-fields" }, [
+        nomeField,
+        h("div", { class: "login-field" }, [h("label", { class: "label" }, ["E-mail"]), email]),
+        h("div", { class: "login-field" }, [
+          h("label", { class: "label" }, ["Senha"]),
+          h("div", { class: "login-senha-wrap" }, [senha, btnEye]),
         ]),
-        linkEsqueci,
+        senhaConfField,
+        !modoCadastro ? h("div", { class: "login-extras" }, [
+          h("label", { class: "login-lembrar" }, [chkLembrar, h("span", {}, ["Lembrar e-mail"])]),
+          linkEsqueci,
+        ]) : null,
       ]),
-    ]),
-    btn,
-    btnBio,
-  ]);
+      btn,
+      !modoCadastro ? btnBio : null,
+    ]);
 
-  const wrap = h("div", { class: "login-page" }, [
-    h("div", { class: "login-bg" }),
-    h("div", { class: "login-card" }, [form]),
-    h("div", { class: "login-footer" }, ["Dica: adicione à tela inicial para acesso rápido."]),
-  ]);
+    const wrap = h("div", { class: "login-page" }, [
+      h("div", { class: "login-bg" }),
+      h("div", { class: "login-card" }, [form, linkToggle]),
+      h("div", { class: "login-footer" }, ["Dica: adicione à tela inicial para acesso rápido."]),
+    ]);
 
-  app.append(wrap);
-  setTimeout(() => { if (!savedEmail) email.focus(); else senha.focus(); }, 80);
+    app.append(wrap);
+    setTimeout(() => { if (!savedEmail || modoCadastro) email.focus(); else senha.focus(); }, 80);
+  }
+
+  render();
 }
 
 async function ensureMe() {

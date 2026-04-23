@@ -4,7 +4,7 @@ import base64
 import io
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, File, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, UploadFile, File, status
 from sqlalchemy.orm import Session
 
 from backend.app.core.config import get_settings
@@ -130,14 +130,14 @@ def remove_avatar(
 
 
 @router.post("/esqueci-senha")
-async def esqueci_senha(data: dict, db: Session = Depends(get_db)) -> dict:
+async def esqueci_senha(request: Request, db: Session = Depends(get_db)) -> dict:
     """Envia e-mail com senha temporária."""
     import secrets
-    import asyncio
     from backend.app.core.security import hash_password
     from backend.app.services.email import send_email
 
-    email = (data.get("email") or "").lower().strip()
+    body = await request.json()
+    email = (body.get("email") or "").lower().strip()
     if not email:
         raise HTTPException(status_code=400, detail="Informe o e-mail.")
 
@@ -191,3 +191,50 @@ async def esqueci_senha(data: dict, db: Session = Depends(get_db)) -> dict:
         html=html,
     )
     return {"ok": True}
+
+
+@router.post("/cadastro", response_model=MeOut)
+async def cadastro(request: Request, response: Response, db: Session = Depends(get_db)) -> MeOut:
+    """Cadastro de novo médico/usuário."""
+    from backend.app.core.security import hash_password
+    from backend.app.models.user import Usuario
+
+    body = await request.json()
+    nome  = (body.get("nome") or "").strip()
+    email_val = (body.get("email") or "").lower().strip()
+    senha_val = (body.get("senha") or "").strip()
+
+    if not email_val or not senha_val:
+        raise HTTPException(status_code=400, detail="E-mail e senha são obrigatórios.")
+    if len(senha_val) < 6:
+        raise HTTPException(status_code=400, detail="Senha deve ter pelo menos 6 caracteres.")
+
+    existing = get_by_email(db, email_val)
+    if existing:
+        raise HTTPException(status_code=409, detail="E-mail já cadastrado.")
+
+    user = Usuario(
+        email=email_val,
+        nome=nome or None,
+        senha_hash=hash_password(senha_val),
+        ativo=True,
+        lembrete_ativo=True,
+        lembrete_dias=[1],
+    )
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+
+    settings = get_settings()
+    token = create_access_token(subject=str(user.id))
+    response.set_cookie(
+        key=settings.auth_cookie_name,
+        value=token,
+        httponly=True,
+        secure=settings.auth_cookie_secure,
+        samesite=settings.auth_cookie_samesite,
+        domain=settings.auth_cookie_domain,
+        path="/",
+        max_age=settings.access_token_expires_minutes * 60,
+    )
+    return MeOut(usuario=_user_to_out(user))
