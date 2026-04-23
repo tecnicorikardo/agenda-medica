@@ -11,5 +11,5 @@ COPY logo.png /app/logo.png
 
 ENV PYTHONUNBUFFERED=1
 
-CMD ["sh", "-c", "uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "uvicorn backend.app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
 
