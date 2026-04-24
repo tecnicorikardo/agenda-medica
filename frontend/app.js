@@ -441,6 +441,7 @@ function openStatusMenu(consulta, badgeEl, onChanged) {
     const item = h("button", {
       class: `status-menu-item status-menu-${value}`,
       type: "button",
+      "aria-label": label,
       onclick: async () => {
         menu.remove();
         if (value === "cancelada") {
@@ -461,7 +462,16 @@ function openStatusMenu(consulta, badgeEl, onChanged) {
   }, 10);
 
   badgeEl.parentNode.style.position = "relative";
+
+  // Posicionamento dinâmico: acima se espaço insuficiente abaixo
   badgeEl.parentNode.append(menu);
+  setTimeout(() => {
+    const rect = menu.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    if (spaceBelow < 20) {
+      menu.classList.add("open-above");
+    }
+  }, 10);
 }
 
 async function _quickStatus(consulta, novoStatus, onChanged) {
@@ -624,16 +634,33 @@ function topbar(active) {
 }
 
 function renderFAB(active) {
-  // Remove FAB anterior se existir
+  // Remove FAB e bottom nav anteriores
   document.getElementById("fab-dashboard")?.remove();
+  document.getElementById("bottom-nav")?.remove();
   if (!state.me) return;
-  const fab = h("a", {
-    id: "fab-dashboard",
-    class: "fab" + (active === "dashboard" ? " fab-active" : ""),
-    href: "#/dashboard",
-    title: "Dashboard",
-  }, ["📊"]);
-  document.body.append(fab);
+
+  // Bottom Navigation Bar
+  const NAV_ITEMS = [
+    { key: "dashboard", icon: "📊", label: "Dashboard", href: "#/dashboard" },
+    { key: "agenda",    icon: "📅", label: "Agenda",    href: "#/agenda" },
+    { key: "pacientes", icon: "👥", label: "Pacientes", href: "#/pacientes" },
+    { key: "perfil",    icon: "⚙️",  label: "Perfil",   href: "#/perfil" },
+  ];
+
+  const nav = h("nav", { id: "bottom-nav", class: "bottom-nav", "aria-label": "Navegação principal" },
+    NAV_ITEMS.map(({ key, icon, label, href }) =>
+      h("a", {
+        class: "bottom-nav-item" + (active === key ? " active" : ""),
+        href,
+        "aria-label": label,
+        "aria-current": active === key ? "page" : null,
+      }, [
+        h("span", { class: "bottom-nav-icon", "aria-hidden": "true" }, [icon]),
+        h("span", { class: "bottom-nav-label" }, [label]),
+      ])
+    )
+  );
+  document.body.append(nav);
 }
 
 function pageShell(active, content) {
@@ -643,49 +670,6 @@ function pageShell(active, content) {
   if (tb) app.append(tb);
   app.append(h("div", { class: "container page-content" }, content));
   renderFAB(active);
-  renderBottomNav(active);
-}
-
-function renderBottomNav(active) {
-  // Remove bottom nav anterior se existir
-  document.querySelector(".bottom-nav")?.remove();
-  if (!state.me) return;
-  
-  const nav = h("nav", { class: "bottom-nav" }, [
-    h("a", {
-      class: `bottom-nav-item${active === "dashboard" ? " active" : ""}`,
-      href: "#/dashboard",
-      title: "Dashboard",
-    }, [
-      h("div", { class: "bottom-nav-icon" }, ["📊"]),
-      h("span", {}, ["Dashboard"]),
-    ]),
-    h("a", {
-      class: `bottom-nav-item${active === "agenda" ? " active" : ""}`,
-      href: "#/agenda",
-      title: "Agenda",
-    }, [
-      h("div", { class: "bottom-nav-icon" }, ["📅"]),
-      h("span", {}, ["Agenda"]),
-    ]),
-    h("a", {
-      class: `bottom-nav-item${active === "pacientes" || active === "paciente" ? " active" : ""}`,
-      href: "#/pacientes",
-      title: "Pacientes",
-    }, [
-      h("div", { class: "bottom-nav-icon" }, ["👥"]),
-      h("span", {}, ["Pacientes"]),
-    ]),
-    h("a", {
-      class: `bottom-nav-item${active === "perfil" ? " active" : ""}`,
-      href: "#/perfil",
-      title: "Perfil",
-    }, [
-      h("div", { class: "bottom-nav-icon" }, ["⚙"]),
-      h("span", {}, ["Perfil"]),
-    ]),
-  ]);
-  document.body.append(nav);
 }
 
 function showWelcomeScreen(me) {
@@ -1120,18 +1104,21 @@ async function agendaPage() {
         h("button", {
           class: "consult-action-btn",
           title: "Editar",
+          "aria-label": "Editar consulta",
           type: "button",
           onclick: (e) => { e.stopPropagation(); openEdit(c); },
         }, ["✏️"]),
         telNum ? h("a", {
           class: "consult-action-btn",
           title: "Ligar",
+          "aria-label": `Ligar para ${c.paciente_nome || "paciente"}`,
           href: `tel:${telNum}`,
           onclick: (e) => e.stopPropagation(),
         }, ["📞"]) : null,
         telNum ? h("a", {
           class: "consult-action-btn",
           title: "WhatsApp",
+          "aria-label": `Enviar WhatsApp para ${c.paciente_nome || "paciente"}`,
           href: `https://wa.me/55${telNum}`,
           target: "_blank",
           rel: "noopener",
@@ -1190,6 +1177,12 @@ async function agendaPage() {
     let startX = 0, startY = 0, dx = 0;
     let swiping = false;
 
+    // Ícones de feedback sobrepostos
+    const iconRight = h("div", { class: "swipe-hint swipe-hint-right", "aria-hidden": "true" }, ["✅"]);
+    const iconLeft  = h("div", { class: "swipe-hint swipe-hint-left",  "aria-hidden": "true" }, ["❌"]);
+    el.style.position = "relative";
+    el.append(iconRight, iconLeft);
+
     el.addEventListener("touchstart", (e) => {
       startX = e.touches[0].clientX;
       startY = e.touches[0].clientY;
@@ -1205,10 +1198,19 @@ async function agendaPage() {
         const clamped = Math.max(-80, Math.min(80, dx));
         el.style.transform = `translateX(${clamped}px)`;
         el.style.transition = "none";
-        if (dx > 0) el.classList.add("swipe-right");
-        else el.classList.remove("swipe-right");
-        if (dx < 0) el.classList.add("swipe-left");
-        else el.classList.remove("swipe-left");
+
+        const ratio = Math.min(Math.abs(dx) / 50, 1);
+        if (dx > 0) {
+          el.classList.add("swipe-right");
+          el.classList.remove("swipe-left");
+          iconRight.style.opacity = ratio;
+          iconLeft.style.opacity  = 0;
+        } else {
+          el.classList.add("swipe-left");
+          el.classList.remove("swipe-right");
+          iconLeft.style.opacity  = ratio;
+          iconRight.style.opacity = 0;
+        }
       }
     }, { passive: true });
 
@@ -1216,15 +1218,28 @@ async function agendaPage() {
       el.style.transition = "transform .25s ease";
       el.style.transform = "";
       el.classList.remove("swipe-right", "swipe-left");
+      iconRight.style.opacity = 0;
+      iconLeft.style.opacity  = 0;
       if (!swiping) return;
-      if (dx > 60) onRight();
-      else if (dx < -60) onLeft();
+      if (dx > 50) onRight();
+      else if (dx < -50) onLeft();
     });
   }
 
   async function load() {
     listWrap.innerHTML = "";
-    listWrap.append(h("div", { class: "muted" }, ["Carregando..."]));
+    // Skeleton screen
+    const skeleton = h("div", { class: "consult-list" },
+      [1, 2, 3].map(() => h("div", { class: "consult-card skeleton" }, [
+        h("div", { class: "skeleton-time" }),
+        h("div", { class: "skeleton-content" }, [
+          h("div", { class: "skeleton-line" }),
+          h("div", { class: "skeleton-line short" }),
+        ]),
+        h("div", { class: "skeleton-badge" }),
+      ]))
+    );
+    listWrap.append(skeleton);
     slotsWrap.style.display = "none";
     slotsWrap.innerHTML = "";
     try {
@@ -1535,7 +1550,10 @@ async function agendaPage() {
     ]),
   ]);
 
-  filtro.addEventListener("input", () => renderList());
+  filtro.addEventListener("input", () => {
+    clearTimeout(filtro._t);
+    filtro._t = setTimeout(() => renderList(), 300);
+  });
   await load();
 }
 
@@ -2440,12 +2458,14 @@ async function router() {
 
   if (page === "login") {
     document.getElementById("fab-dashboard")?.remove();
+    document.getElementById("bottom-nav")?.remove();
     return loginPage();
   }
 
   const ok = await ensureMe();
   if (!ok) {
     document.getElementById("fab-dashboard")?.remove();
+    document.getElementById("bottom-nav")?.remove();
     return loginPage();
   }
 
