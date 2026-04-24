@@ -643,6 +643,49 @@ function pageShell(active, content) {
   if (tb) app.append(tb);
   app.append(h("div", { class: "container page-content" }, content));
   renderFAB(active);
+  renderBottomNav(active);
+}
+
+function renderBottomNav(active) {
+  // Remove bottom nav anterior se existir
+  document.querySelector(".bottom-nav")?.remove();
+  if (!state.me) return;
+  
+  const nav = h("nav", { class: "bottom-nav" }, [
+    h("a", {
+      class: `bottom-nav-item${active === "dashboard" ? " active" : ""}`,
+      href: "#/dashboard",
+      title: "Dashboard",
+    }, [
+      h("div", { class: "bottom-nav-icon" }, ["📊"]),
+      h("span", {}, ["Dashboard"]),
+    ]),
+    h("a", {
+      class: `bottom-nav-item${active === "agenda" ? " active" : ""}`,
+      href: "#/agenda",
+      title: "Agenda",
+    }, [
+      h("div", { class: "bottom-nav-icon" }, ["📅"]),
+      h("span", {}, ["Agenda"]),
+    ]),
+    h("a", {
+      class: `bottom-nav-item${active === "pacientes" || active === "paciente" ? " active" : ""}`,
+      href: "#/pacientes",
+      title: "Pacientes",
+    }, [
+      h("div", { class: "bottom-nav-icon" }, ["👥"]),
+      h("span", {}, ["Pacientes"]),
+    ]),
+    h("a", {
+      class: `bottom-nav-item${active === "perfil" ? " active" : ""}`,
+      href: "#/perfil",
+      title: "Perfil",
+    }, [
+      h("div", { class: "bottom-nav-icon" }, ["⚙"]),
+      h("span", {}, ["Perfil"]),
+    ]),
+  ]);
+  document.body.append(nav);
 }
 
 function showWelcomeScreen(me) {

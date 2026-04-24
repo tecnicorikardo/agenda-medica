@@ -20,7 +20,7 @@
 body.light {
   --bg:#f0f2f7;
   --card:#ffffff;
-  --muted:#7a8aaa;
+  --muted:#5a6a8a;
   --text:#1a2540;
   --line:#dde3f0;
   --brand:#2563eb;
@@ -1781,9 +1781,10 @@ textarea {
   margin-bottom: 8px;
 }
 .modal-label {
-  font-size: 14px;
+  font-size: 15px;
   opacity: 1;
   color: var(--muted);
+  font-weight: 600;
 }
 
 /* ── Modal mobile-first ── */
@@ -1797,6 +1798,7 @@ textarea {
   max-height: 92dvh;
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
+  box-shadow: 0 -8px 32px rgba(0,0,0,.3);
 }
 
 @media (min-width: 600px) {
@@ -1904,6 +1906,20 @@ body.light .modal-field {
   width: auto;
 }
 
+@media (max-width: 400px) {
+  .dtp-wrap {
+    flex-direction: column;
+    gap: 12px;
+  }
+  .dtp-wrap .dp-wrap {
+    width: 100%;
+    min-width: unset;
+  }
+  .dtp-wrap .dtp-time {
+    width: 100%;
+  }
+}
+
 /* ── Popup do date picker — não sai da tela no mobile ── */
 @media (max-width: 480px) {
   .dp-popup {
@@ -1918,13 +1934,14 @@ body.light .modal-field {
     z-index: 300;
     padding: 18px 16px 32px;
     animation: dpSlideUp .2s cubic-bezier(.22,1,.36,1) both;
+    box-shadow: 0 -8px 32px rgba(0,0,0,.3);
   }
   @keyframes dpSlideUp {
     from { transform: translateY(100%); opacity: 0; }
     to   { transform: translateY(0);    opacity: 1; }
   }
   .dp-cell {
-    min-height: 40px;
+    min-height: 42px;
     font-size: 15px;
   }
   .dp-weekday {
@@ -1948,6 +1965,7 @@ body.light .modal-field {
   padding: 10px 14px;
   font-size: 15px;
   font-weight: 700;
+  transition: transform .1s, background .1s;
   min-height: 44px;
   border-radius: 12px;
 }
@@ -2035,11 +2053,12 @@ body.light .appt-times-field {
   background: rgba(8,13,24,.45);
   border: 1px solid rgba(32,50,85,.6);
   border-left: 4px solid rgba(32,50,85,.6);
-  transition: transform .25s ease, background .15s;
+  transition: transform .25s ease, background .15s, border-left-color .15s;
   overflow: hidden;
   position: relative;
   cursor: default;
   -webkit-tap-highlight-color: transparent;
+  min-height: 72px;
 }
 
 /* Cores da borda esquerda por status */
@@ -2049,9 +2068,15 @@ body.light .appt-times-field {
 .consult-card-cancelada  { border-left-color: rgba(255,107,107,.7); opacity: .65; }
 .consult-card-faltou     { border-left-color: rgba(255,204,102,.7); }
 
-/* Indicador de swipe */
-.consult-card.swipe-right { background: rgba(67,209,127,.12); }
-.consult-card.swipe-left  { background: rgba(255,107,107,.1); }
+/* Indicador de swipe com feedback visual melhorado */
+.consult-card.swipe-right { 
+  background: rgba(67,209,127,.2);
+  border-left-color: rgba(67,209,127,1) !important;
+}
+.consult-card.swipe-left  { 
+  background: rgba(255,107,107,.2);
+  border-left-color: rgba(255,107,107,1) !important;
+}
 
 /* Coluna esquerda — horário */
 .consult-card-left {
@@ -2084,9 +2109,10 @@ body.light .appt-times-field {
   text-overflow: ellipsis;
 }
 .consult-tel {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--muted);
   margin-top: 2px;
+  font-weight: 500;
 }
 
 /* Coluna direita — badge + ações */
@@ -2252,4 +2278,214 @@ body.light .cancel-chip {
 body.light .consult-action-btn {
   background: #f8faff;
   border-color: rgba(200,210,230,.8);
+}
+
+
+/* =============================================
+   BOTTOM NAVIGATION BAR — MOBILE
+   ============================================= */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background: rgba(15,27,51,.98);
+  border-top: 1px solid rgba(110,168,255,.15);
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  padding: 8px 0 max(8px, env(safe-area-inset-bottom));
+  box-shadow: 0 -4px 16px rgba(0,0,0,.3);
+  gap: 0;
+}
+
+.bottom-nav-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+  transition: color .15s, background .15s;
+  flex: 1;
+  min-height: 56px;
+  border-radius: 12px;
+  margin: 0 4px;
+}
+
+.bottom-nav-item:hover {
+  color: var(--text);
+}
+
+.bottom-nav-item.active {
+  color: var(--brand);
+  background: rgba(110,168,255,.1);
+}
+
+.bottom-nav-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+/* Tema claro */
+body.light .bottom-nav {
+  background: rgba(255,255,255,.95);
+  border-top-color: rgba(200,210,230,.5);
+}
+
+body.light .bottom-nav-item {
+  color: var(--muted);
+}
+
+body.light .bottom-nav-item:hover {
+  color: var(--text);
+  background: rgba(240,242,247,.6);
+}
+
+body.light .bottom-nav-item.active {
+  color: var(--brand);
+  background: rgba(37,99,235,.08);
+}
+
+/* Ajustar container quando há bottom nav */
+.page-content {
+  padding-bottom: 72px;
+}
+
+@media (min-width: 768px) {
+  .bottom-nav {
+    display: none;
+  }
+  .page-content {
+    padding-bottom: 16px;
+  }
+}
+
+/* =============================================
+   SWIPE FEEDBACK ICONS
+   ============================================= */
+.consult-card::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: opacity .15s;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.consult-card.swipe-right::before {
+  content: '✅';
+  opacity: 1;
+}
+
+.consult-card.swipe-left::before {
+  content: '❌';
+  opacity: 1;
+}
+
+/* =============================================
+   TOPBAR COMPACTO EM MOBILE
+   ============================================= */
+@media (max-width: 480px) {
+  .topbar {
+    padding: 10px 12px;
+  }
+  
+  .brand {
+    gap: 8px;
+  }
+  
+  .brand h1 {
+    font-size: 14px;
+    font-weight: 700;
+  }
+  
+  .brand small {
+    font-size: 11px;
+  }
+  
+  .topbar-actions {
+    gap: 4px;
+  }
+  
+  .topbar-icon-btn {
+    padding: 8px;
+    font-size: 16px;
+    min-width: 36px;
+    min-height: 36px;
+  }
+}
+
+/* =============================================
+   LOADING SKELETON
+   ============================================= */
+.skeleton {
+  background: linear-gradient(90deg, rgba(110,168,255,.05) 0%, rgba(110,168,255,.1) 50%, rgba(110,168,255,.05) 100%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.5s infinite;
+  border-radius: 8px;
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+.skeleton-card {
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  border-radius: 14px;
+  min-height: 72px;
+}
+
+.skeleton-line {
+  height: 12px;
+  margin-bottom: 8px;
+  border-radius: 4px;
+}
+
+.skeleton-line.short {
+  width: 60%;
+}
+
+/* Tema claro */
+body.light .skeleton {
+  background: linear-gradient(90deg, rgba(37,99,235,.03) 0%, rgba(37,99,235,.08) 50%, rgba(37,99,235,.03) 100%);
+}
+
+/* =============================================
+   IMPROVED BUTTON FEEDBACK
+   ============================================= */
+.slot-btn:active {
+  transform: scale(.95);
+}
+
+.status-menu-item {
+  position: relative;
+}
+
+.status-menu-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: transparent;
+  transition: background .15s;
+}
+
+.status-menu-item:hover::before {
+  background: var(--brand);
 }
