@@ -2015,3 +2015,241 @@ body.light .appt-times-field {
 .appt-time-adjusted {
   animation: apptTimeAdjusted 1.2s ease forwards;
 }
+
+
+/* =============================================
+   CARDS DE CONSULTA — AÇÕES RÁPIDAS
+   ============================================= */
+.consult-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.consult-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  background: rgba(8,13,24,.45);
+  border: 1px solid rgba(32,50,85,.6);
+  border-left: 4px solid rgba(32,50,85,.6);
+  transition: transform .25s ease, background .15s;
+  overflow: hidden;
+  position: relative;
+  cursor: default;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Cores da borda esquerda por status */
+.consult-card-agendada   { border-left-color: rgba(110,168,255,.7); }
+.consult-card-confirmada { border-left-color: rgba(67,209,127,.8); }
+.consult-card-concluida  { border-left-color: rgba(167,139,250,.8); }
+.consult-card-cancelada  { border-left-color: rgba(255,107,107,.7); opacity: .65; }
+.consult-card-faltou     { border-left-color: rgba(255,204,102,.7); }
+
+/* Indicador de swipe */
+.consult-card.swipe-right { background: rgba(67,209,127,.12); }
+.consult-card.swipe-left  { background: rgba(255,107,107,.1); }
+
+/* Coluna esquerda — horário */
+.consult-card-left {
+  flex-shrink: 0;
+  min-width: 52px;
+  text-align: center;
+}
+.consult-time {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: -.3px;
+  line-height: 1.1;
+}
+.consult-time-end {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* Coluna central — paciente */
+.consult-card-mid {
+  flex: 1;
+  min-width: 0;
+}
+.consult-nome {
+  font-size: 15px;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.consult-tel {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* Coluna direita — badge + ações */
+.consult-card-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.consult-badge-wrap {
+  position: relative;
+}
+
+/* Badge como botão clicável */
+.badge-btn {
+  cursor: pointer;
+  border: none;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 999px;
+  transition: transform .1s, opacity .1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.badge-btn:hover  { opacity: .85; }
+.badge-btn:active { transform: scale(.93); }
+
+/* Cores dos badges */
+.badge.agendada   { background: rgba(110,168,255,.15); border: 1px solid rgba(110,168,255,.5); color: #cfe1ff; }
+.badge.confirmada { background: rgba(67,209,127,.15);  border: 1px solid rgba(67,209,127,.5);  color: #d7ffea; }
+.badge.concluida  { background: rgba(167,139,250,.15); border: 1px solid rgba(167,139,250,.5); color: #ede9fe; }
+.badge.cancelada  { background: rgba(255,107,107,.12); border: 1px solid rgba(255,107,107,.5); color: #ffd7d7; }
+.badge.faltou     { background: rgba(255,204,102,.12); border: 1px solid rgba(255,204,102,.5); color: #ffe8b5; }
+
+/* Menu rápido de status */
+.status-quick-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  z-index: 60;
+  background: rgba(11,20,40,.98);
+  border: 1px solid rgba(110,168,255,.2);
+  border-radius: 14px;
+  box-shadow: 0 12px 36px rgba(0,0,0,.55);
+  min-width: 200px;
+  overflow: hidden;
+  animation: dropIn .15s cubic-bezier(.22,1,.36,1) both;
+}
+
+.status-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 12px 16px;
+  background: none;
+  border: none;
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+  transition: background .1s;
+  border-bottom: 1px solid rgba(32,50,85,.4);
+}
+.status-menu-item:last-child { border-bottom: none; }
+.status-menu-item:hover      { background: rgba(110,168,255,.1); }
+.status-menu-confirmada:hover { background: rgba(67,209,127,.1); }
+.status-menu-cancelada        { color: #ffd7d7; }
+.status-menu-cancelada:hover  { background: rgba(255,107,107,.1); }
+.status-menu-concluida:hover  { background: rgba(167,139,250,.1); }
+.status-menu-faltou:hover     { background: rgba(255,204,102,.1); }
+
+/* Botões de ação rápida no card */
+.consult-actions {
+  display: flex;
+  gap: 4px;
+}
+.consult-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid rgba(32,50,85,.5);
+  background: rgba(15,27,51,.6);
+  font-size: 15px;
+  cursor: pointer;
+  text-decoration: none;
+  color: var(--text);
+  transition: background .12s, transform .1s;
+  -webkit-tap-highlight-color: transparent;
+}
+.consult-action-btn:hover  { background: rgba(110,168,255,.12); border-color: rgba(110,168,255,.3); }
+.consult-action-btn:active { transform: scale(.9); }
+
+/* ── Painel de confirmação de cancelamento ── */
+.cancel-confirm-panel {
+  text-align: center;
+  padding: 28px 20px 24px;
+}
+.cancel-icon  { font-size: 40px; margin-bottom: 12px; }
+.cancel-title { font-size: 20px; font-weight: 800; margin-bottom: 6px; }
+.cancel-sub   { font-size: 14px; color: var(--muted); margin-bottom: 20px; }
+
+/* ── Chips de motivo de cancelamento ── */
+.cancel-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+.cancel-chip {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(32,50,85,.7);
+  background: rgba(15,27,51,.6);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background .12s, border-color .12s;
+  -webkit-tap-highlight-color: transparent;
+}
+.cancel-chip:hover   { background: rgba(255,107,107,.1); border-color: rgba(255,107,107,.4); }
+.cancel-chip.selected {
+  background: rgba(255,107,107,.18);
+  border-color: rgba(255,107,107,.7);
+  color: #ffd7d7;
+}
+
+/* ── Tema claro ── */
+body.light .consult-card {
+  background: rgba(240,242,247,.6);
+  border-color: rgba(200,210,230,.6);
+}
+body.light .consult-card-agendada   { border-left-color: rgba(37,99,235,.6); }
+body.light .consult-card-confirmada { border-left-color: rgba(22,163,74,.7); }
+body.light .consult-card-concluida  { border-left-color: rgba(124,58,237,.6); }
+body.light .consult-card-cancelada  { border-left-color: rgba(220,38,38,.6); }
+body.light .consult-card-faltou     { border-left-color: rgba(217,119,6,.6); }
+body.light .consult-card.swipe-right { background: rgba(22,163,74,.08); }
+body.light .consult-card.swipe-left  { background: rgba(220,38,38,.06); }
+body.light .badge.agendada   { background: rgba(37,99,235,.1);  border-color: rgba(37,99,235,.4);  color: #1d4ed8; }
+body.light .badge.confirmada { background: rgba(22,163,74,.1);  border-color: rgba(22,163,74,.4);  color: #15803d; }
+body.light .badge.concluida  { background: rgba(124,58,237,.1); border-color: rgba(124,58,237,.4); color: #6d28d9; }
+body.light .badge.cancelada  { background: rgba(220,38,38,.08); border-color: rgba(220,38,38,.4);  color: #dc2626; }
+body.light .badge.faltou     { background: rgba(217,119,6,.1);  border-color: rgba(217,119,6,.4);  color: #d97706; }
+body.light .status-quick-menu {
+  background: #ffffff;
+  border-color: rgba(200,210,230,.8);
+  box-shadow: 0 8px 24px rgba(30,50,100,.12);
+}
+body.light .status-menu-item { color: var(--text); border-color: rgba(200,210,230,.5); }
+body.light .cancel-chip {
+  background: #f8faff;
+  border-color: rgba(200,210,230,.8);
+  color: var(--text);
+}
+body.light .consult-action-btn {
+  background: #f8faff;
+  border-color: rgba(200,210,230,.8);
+}

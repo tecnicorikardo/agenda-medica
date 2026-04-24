@@ -412,13 +412,176 @@ function formatTime(dt) {
 
 function statusBadge(status) {
   const map = {
-    agendada: "Agendada",
-    confirmada: "Confirmada",
+    agendada:  "Agendada",
+    confirmada:"Confirmada",
     concluida: "Concluída",
     cancelada: "Cancelada",
-    faltou: "Faltou",
+    faltou:    "Faltou",
   };
   return h("span", { class: `badge ${status}` }, [map[status] || status]);
+}
+
+// Menu rápido de status — abre inline abaixo do badge
+const STATUS_MENU = [
+  { value: "confirmada", icon: "✅", label: "Confirmar" },
+  { value: "agendada",   icon: "📅", label: "Agendado" },
+  { value: "concluida",  icon: "✔️",  label: "Atendimento realizado" },
+  { value: "faltou",     icon: "🚫", label: "Faltou" },
+  { value: "cancelada",  icon: "❌", label: "Cancelar" },
+];
+
+function openStatusMenu(consulta, badgeEl, onChanged) {
+  // Fecha qualquer menu aberto
+  document.querySelectorAll(".status-quick-menu").forEach(m => m.remove());
+
+  const menu = h("div", { class: "status-quick-menu" });
+
+  STATUS_MENU.forEach(({ value, icon, label }) => {
+    if (value === consulta.status) return; // não mostra o atual
+    const item = h("button", {
+      class: `status-menu-item status-menu-${value}`,
+      type: "button",
+      onclick: async () => {
+        menu.remove();
+        if (value === "cancelada") {
+          await _doCancelFlow(consulta, onChanged);
+        } else {
+          await _quickStatus(consulta, value, onChanged);
+        }
+      },
+    }, [`${icon} ${label}`]);
+    menu.append(item);
+  });
+
+  // Fecha ao clicar fora
+  setTimeout(() => {
+    document.addEventListener("click", function _close(e) {
+      if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener("click", _close); }
+    });
+  }, 10);
+
+  badgeEl.parentNode.style.position = "relative";
+  badgeEl.parentNode.append(menu);
+}
+
+async function _quickStatus(consulta, novoStatus, onChanged) {
+  try {
+    await api(`/appointments/${consulta.id}`, {
+      method: "PUT",
+      body: JSON.stringify({
+        inicio: consulta.inicio,
+        fim: consulta.fim,
+        status: novoStatus,
+        observacoes: consulta.observacoes || null,
+      }),
+    });
+    consulta.status = novoStatus;
+    onChanged();
+  } catch (err) {
+    toast(err.message);
+  }
+}
+
+async function _doCancelFlow(consulta, onChanged) {
+  // Passo 1: confirmação
+  const overlay = h("div", { class: "modal" });
+  const panel = h("div", { class: "panel cancel-confirm-panel" }, [
+    h("div", { class: "cancel-icon" }, ["❌"]),
+    h("div", { class: "cancel-title" }, ["Cancelar consulta?"]),
+    h("div", { class: "cancel-sub" }, [
+      consulta.paciente_nome
+        ? `${consulta.paciente_nome} • ${modoRange ? formatDate(consulta.inicio) + " " : ""}${formatTime(consulta.inicio)}`
+        : formatTime(consulta.inicio),
+    ]),
+    h("div", { class: "modal-actions" }, [
+      h("button", { class: "btn", type: "button", onclick: () => overlay.remove() }, ["Voltar"]),
+      h("button", {
+        class: "btn danger", type: "button",
+        onclick: async () => {
+          overlay.remove();
+          // Passo 2: motivo opcional
+          await _cancelMotivoFlow(consulta, onChanged);
+        },
+      }, ["Sim, cancelar"]),
+    ]),
+  ]);
+  overlay.append(panel);
+  overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
+  document.body.append(overlay);
+}
+
+async function _cancelMotivoFlow(consulta, onChanged) {
+  const MOTIVOS = ["Paciente desistiu", "Sem resposta", "Remarcado", "Problema pessoal", "Outro"];
+
+  const overlay = h("div", { class: "modal" });
+  const motivoInput = h("textarea", {
+    class: "input",
+    rows: "2",
+    placeholder: "Descreva o motivo...",
+    style: "display:none; margin-top:8px",
+  });
+
+  const chipWrap = h("div", { class: "cancel-chips" },
+    MOTIVOS.map(m => {
+      const chip = h("button", {
+        class: "cancel-chip",
+        type: "button",
+        onclick: () => {
+          document.querySelectorAll(".cancel-chip").forEach(c => c.classList.remove("selected"));
+          chip.classList.add("selected");
+          motivoInput.value = m === "Outro" ? "" : m;
+          motivoInput.style.display = m === "Outro" ? "" : "none";
+          if (m === "Outro") motivoInput.focus();
+        },
+      }, [m]);
+      return chip;
+    })
+  );
+
+  const btnNao = h("button", {
+    class: "btn", type: "button",
+    onclick: async () => {
+      overlay.remove();
+      await _executarCancelamento(consulta, null, onChanged);
+    },
+  }, ["Não, só cancelar"]);
+
+  const btnSim = h("button", {
+    class: "btn danger", type: "button",
+    onclick: async () => {
+      const motivo = motivoInput.style.display !== "none"
+        ? motivoInput.value.trim()
+        : (document.querySelector(".cancel-chip.selected")?.textContent || null);
+      overlay.remove();
+      await _executarCancelamento(consulta, motivo || null, onChanged);
+    },
+  }, ["Confirmar"]);
+
+  const panel = h("div", { class: "panel" }, [
+    h("div", { class: "modal-header" }, [
+      h("h2", { class: "modal-title" }, ["Motivo do cancelamento"]),
+      h("button", { class: "btn modal-close-btn", type: "button", onclick: () => overlay.remove() }, ["✕"]),
+    ]),
+    h("p", { class: "muted", style: "margin:0 0 12px; font-size:14px" }, ["Deseja informar o motivo? (opcional)"]),
+    chipWrap,
+    motivoInput,
+    h("div", { class: "modal-actions", style: "margin-top:16px" }, [btnNao, btnSim]),
+  ]);
+  overlay.append(panel);
+  overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
+  document.body.append(overlay);
+}
+
+async function _executarCancelamento(consulta, motivo, onChanged) {
+  try {
+    await api(`/appointments/${consulta.id}/cancel`, { method: "POST", body: JSON.stringify({ motivo: motivo }) });
+    consulta.status = "cancelada";
+    if (motivo) consulta.observacoes = `Cancelado: ${motivo}`;
+    onChanged();
+    toast("Consulta cancelada.");
+  } catch (err) {
+    toast(err.message);
+  }
 }
 
 function topbar(active) {
@@ -886,25 +1049,134 @@ async function agendaPage() {
       listWrap.append(h("div", { class: "muted" }, ["Nada para mostrar com esse filtro."]));
       return;
     }
-    const tbl = h("table", { class: "table" }, [
-      h("tbody", {}, items.map((c) =>
-        h("tr", { class: "tr" }, [
-          h("td", {}, [
-            h("div", { style: "font-weight:800" }, [modoRange ? `${formatDate(c.inicio)} ${formatTime(c.inicio)}` : formatTime(c.inicio)]),
-            h("div", { class: "sub" }, [`até ${formatTime(c.fim)}`]),
+
+    const list = h("div", { class: "consult-list" });
+
+    items.forEach((c) => {
+      const badgeWrap = h("div", { class: "consult-badge-wrap" });
+      const badge = h("button", {
+        class: `badge ${c.status} badge-btn`,
+        type: "button",
+        title: "Alterar status",
+        onclick: (e) => {
+          e.stopPropagation();
+          openStatusMenu(c, badge, () => {
+            // Atualiza badge e card sem recarregar tudo
+            badge.className = `badge ${c.status} badge-btn`;
+            badge.textContent = { agendada:"Agendada", confirmada:"Confirmada", concluida:"Concluída", cancelada:"Cancelada", faltou:"Faltou" }[c.status] || c.status;
+            card.className = `consult-card consult-card-${c.status}`;
+          });
+        },
+      }, [{ agendada:"Agendada", confirmada:"Confirmada", concluida:"Concluída", cancelada:"Cancelada", faltou:"Faltou" }[c.status] || c.status]);
+      badgeWrap.append(badge);
+
+      // Ações rápidas
+      const tel = c.paciente_telefone || "";
+      const telNum = tel.replace(/\D/g, "");
+      const acoes = h("div", { class: "consult-actions" }, [
+        h("button", {
+          class: "consult-action-btn",
+          title: "Editar",
+          type: "button",
+          onclick: (e) => { e.stopPropagation(); openEdit(c); },
+        }, ["✏️"]),
+        telNum ? h("a", {
+          class: "consult-action-btn",
+          title: "Ligar",
+          href: `tel:${telNum}`,
+          onclick: (e) => e.stopPropagation(),
+        }, ["📞"]) : null,
+        telNum ? h("a", {
+          class: "consult-action-btn",
+          title: "WhatsApp",
+          href: `https://wa.me/55${telNum}`,
+          target: "_blank",
+          rel: "noopener",
+          onclick: (e) => e.stopPropagation(),
+        }, ["💬"]) : null,
+      ]);
+
+      const card = h("div", { class: `consult-card consult-card-${c.status}` }, [
+        h("div", { class: "consult-card-left" }, [
+          h("div", { class: "consult-time" }, [
+            modoRange
+              ? `${formatDate(c.inicio)} ${formatTime(c.inicio)}`
+              : formatTime(c.inicio),
           ]),
-          h("td", {}, [
-            h("div", { style: "font-weight:800" }, [c.paciente_nome || "Paciente"]),
-            h("div", { class: "sub" }, [c.paciente_telefone || String(c.paciente_id)]),
-          ]),
-          h("td", {}, [statusBadge(c.status)]),
-          h("td", { style: "text-align:right" }, [
-            h("button", { class: "btn", onclick: () => openEdit(c) }, ["Editar"]),
-          ]),
-        ])
-      )),
-    ]);
-    listWrap.append(tbl);
+          h("div", { class: "consult-time-end" }, [`até ${formatTime(c.fim)}`]),
+        ]),
+        h("div", { class: "consult-card-mid" }, [
+          h("div", { class: "consult-nome" }, [c.paciente_nome || "Paciente"]),
+          h("div", { class: "consult-tel" }, [tel]),
+        ]),
+        h("div", { class: "consult-card-right" }, [
+          badgeWrap,
+          acoes,
+        ]),
+      ]);
+
+      // Swipe: direita = confirmar, esquerda = cancelar
+      _addSwipe(card, {
+        onRight: async () => {
+          if (c.status === "confirmada" || c.status === "cancelada" || c.status === "concluida") return;
+          await _quickStatus(c, "confirmada", () => {
+            badge.className = `badge confirmada badge-btn`;
+            badge.textContent = "Confirmada";
+            card.className = `consult-card consult-card-confirmada`;
+          });
+          toast("✅ Confirmada");
+        },
+        onLeft: async () => {
+          if (c.status === "cancelada") return;
+          await _doCancelFlow(c, () => {
+            badge.className = `badge cancelada badge-btn`;
+            badge.textContent = "Cancelada";
+            card.className = `consult-card consult-card-cancelada`;
+          });
+        },
+      });
+
+      list.append(card);
+    });
+
+    listWrap.append(list);
+  }
+
+  // Swipe helper
+  function _addSwipe(el, { onRight, onLeft }) {
+    let startX = 0, startY = 0, dx = 0;
+    let swiping = false;
+
+    el.addEventListener("touchstart", (e) => {
+      startX = e.touches[0].clientX;
+      startY = e.touches[0].clientY;
+      dx = 0;
+      swiping = false;
+    }, { passive: true });
+
+    el.addEventListener("touchmove", (e) => {
+      dx = e.touches[0].clientX - startX;
+      const dy = Math.abs(e.touches[0].clientY - startY);
+      if (Math.abs(dx) > dy && Math.abs(dx) > 8) {
+        swiping = true;
+        const clamped = Math.max(-80, Math.min(80, dx));
+        el.style.transform = `translateX(${clamped}px)`;
+        el.style.transition = "none";
+        if (dx > 0) el.classList.add("swipe-right");
+        else el.classList.remove("swipe-right");
+        if (dx < 0) el.classList.add("swipe-left");
+        else el.classList.remove("swipe-left");
+      }
+    }, { passive: true });
+
+    el.addEventListener("touchend", () => {
+      el.style.transition = "transform .25s ease";
+      el.style.transform = "";
+      el.classList.remove("swipe-right", "swipe-left");
+      if (!swiping) return;
+      if (dx > 60) onRight();
+      else if (dx < -60) onLeft();
+    });
   }
 
   async function load() {
