@@ -1959,3 +1959,59 @@ body.light .modal-field {
 .tr td .sub {
   font-size: 13px;
 }
+
+
+/* =============================================
+   APPOINTMENT PICKER — data única + horários
+   ============================================= */
+.appt-picker-wrap {
+  display: contents; /* os filhos (modal-field) entram direto no fluxo do form */
+}
+
+.appt-times-field {
+  border-bottom: 1px solid rgba(32,50,85,.4);
+}
+body.light .appt-times-field {
+  border-color: rgba(200,210,230,.5);
+}
+
+.appt-times-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+}
+
+.appt-time-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.appt-time-sep {
+  font-size: 18px;
+  color: var(--muted);
+  padding-bottom: 12px;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+/* Input de horário grande e fácil de tocar */
+.appt-time {
+  font-size: 20px !important;
+  font-weight: 700;
+  padding: 13px 10px !important;
+  min-height: 52px;
+  text-align: center;
+  letter-spacing: .5px;
+  border-radius: 14px;
+}
+
+/* Flash visual quando o horário de fim é ajustado automaticamente */
+@keyframes apptTimeAdjusted {
+  0%   { border-color: var(--warn); box-shadow: 0 0 0 3px rgba(255,204,102,.3); }
+  100% { border-color: rgba(32,50,85,.9); box-shadow: none; }
+}
+.appt-time-adjusted {
+  animation: apptTimeAdjusted 1.2s ease forwards;
+}

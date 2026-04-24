@@ -268,6 +268,82 @@ function createDateTimePicker({ value = "", onChange = null, label = "" } = {}) 
   };
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// PICKER DE AGENDAMENTO SIMPLIFICADO
+// Uma data + dois horários (início e fim) lado a lado.
+// Retorna: { el, getInicio(), getFim() } → strings "YYYY-MM-DDTHH:MM"
+// Validação: fim < início → fim ajustado para início + 30min automaticamente.
+// ─────────────────────────────────────────────────────────────────────────────
+function createAppointmentPicker({ inicio = "", fim = "" } = {}) {
+  const [datePartI, timePartI] = inicio ? inicio.split("T") : ["", ""];
+  const [, timePartF]          = fim     ? fim.split("T")     : ["", ""];
+
+  const datePicker = createDatePicker({ value: datePartI });
+
+  const timeInicio = h("input", {
+    class: "input appt-time",
+    type: "time",
+    value: timePartI || "09:00",
+    "aria-label": "Horário de início",
+  });
+
+  const timeFim = h("input", {
+    class: "input appt-time",
+    type: "time",
+    value: timePartF || "09:30",
+    "aria-label": "Horário de fim",
+  });
+
+  // Validação: fim não pode ser anterior ao início
+  function _validate() {
+    const [hI, mI] = timeInicio.value.split(":").map(Number);
+    const [hF, mF] = timeFim.value.split(":").map(Number);
+    const totalI = hI * 60 + mI;
+    const totalF = hF * 60 + mF;
+    if (totalF <= totalI) {
+      const novoFim = totalI + 30;
+      const hh = String(Math.floor(novoFim / 60) % 24).padStart(2, "0");
+      const mm = String(novoFim % 60).padStart(2, "0");
+      timeFim.value = `${hh}:${mm}`;
+      timeFim.classList.add("appt-time-adjusted");
+      setTimeout(() => timeFim.classList.remove("appt-time-adjusted"), 1200);
+    }
+  }
+
+  timeInicio.addEventListener("change", _validate);
+  timeFim.addEventListener("change", _validate);
+
+  const timesRow = h("div", { class: "appt-times-row" }, [
+    h("div", { class: "appt-time-group" }, [
+      h("label", { class: "label modal-label" }, ["Início"]),
+      timeInicio,
+    ]),
+    h("div", { class: "appt-time-sep" }, ["→"]),
+    h("div", { class: "appt-time-group" }, [
+      h("label", { class: "label modal-label" }, ["Fim"]),
+      timeFim,
+    ]),
+  ]);
+
+  const wrap = h("div", { class: "appt-picker-wrap" }, [
+    h("div", { class: "modal-field" }, [
+      h("label", { class: "label modal-label" }, ["Data"]),
+      datePicker.el,
+    ]),
+    h("div", { class: "modal-field appt-times-field" }, [timesRow]),
+  ]);
+
+  function _dateStr() {
+    return datePicker.value || datePartI || "";
+  }
+
+  return {
+    el: wrap,
+    getInicio() { return _dateStr() ? `${_dateStr()}T${timeInicio.value}` : ""; },
+    getFim()    { return _dateStr() ? `${_dateStr()}T${timeFim.value}`    : ""; },
+  };
+}
+
 
 async function api(path, opts = {}) {
   const res = await fetch(`/api${path}`, {
@@ -867,8 +943,10 @@ async function agendaPage() {
       return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
     };
 
-    const inicioPicker = createDateTimePicker({ value: toLocalDT(defaultStart) });
-    const fimPicker    = createDateTimePicker({ value: toLocalDT(defaultEnd) });
+    const apptPicker = createAppointmentPicker({
+      inicio: toLocalDT(defaultStart),
+      fim:    toLocalDT(defaultEnd),
+    });
 
     const observacoes = h("textarea", { class: "input", rows: "3", placeholder: "Observações (opcional)" });
     const btn = h("button", { class: "btn primary", type: "submit" }, ["Salvar"]);
@@ -941,8 +1019,8 @@ async function agendaPage() {
           try {
             const payload = {
               paciente_id: selected.id,
-              inicio: new Date(inicioPicker.value).toISOString(),
-              fim: new Date(fimPicker.value).toISOString(),
+              inicio: new Date(apptPicker.getInicio()).toISOString(),
+              fim: new Date(apptPicker.getFim()).toISOString(),
               status: "agendada",
               observacoes: observacoes.value || null,
             };
@@ -960,8 +1038,7 @@ async function agendaPage() {
       }, [
         h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Paciente"]), paciente]),
         results,
-        h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Início"]), inicioPicker.el]),
-        h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Fim"]), fimPicker.el]),
+        apptPicker.el,
         h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Observações"]), observacoes]),
         h("div", { class: "modal-actions" }, [btn]),
       ]),
@@ -975,8 +1052,10 @@ async function agendaPage() {
       const hh = String(d.getHours()).padStart(2,"0"), mi = String(d.getMinutes()).padStart(2,"0");
       return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
     };
-    const inicioPicker = createDateTimePicker({ value: toLocalDT(consulta.inicio) });
-    const fimPicker    = createDateTimePicker({ value: toLocalDT(consulta.fim) });
+    const apptPicker = createAppointmentPicker({
+      inicio: toLocalDT(consulta.inicio),
+      fim:    toLocalDT(consulta.fim),
+    });
     const statusSel = h("select", { class: "input" }, [
       h("option", { value: "agendada" }, ["Agendada"]),
       h("option", { value: "confirmada" }, ["Confirmada"]),
@@ -1017,8 +1096,8 @@ async function agendaPage() {
           btnSave.textContent = "Salvando...";
           try {
             const payload = {
-              inicio: new Date(inicioPicker.value).toISOString(),
-              fim: new Date(fimPicker.value).toISOString(),
+              inicio: new Date(apptPicker.getInicio()).toISOString(),
+              fim: new Date(apptPicker.getFim()).toISOString(),
               status: statusSel.value,
               observacoes: observacoes.value || null,
             };
@@ -1034,8 +1113,7 @@ async function agendaPage() {
           }
         },
       }, [
-        h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Início"]), inicioPicker.el]),
-        h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Fim"]), fimPicker.el]),
+        apptPicker.el,
         h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Status"]), statusSel]),
         h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Observações"]), observacoes]),
         h("div", { class: "modal-actions" }, [btnSave, btnCancel]),
@@ -1132,8 +1210,10 @@ async function pacientePage() {
           const hh = String(d.getHours()).padStart(2,"0"), mi = String(d.getMinutes()).padStart(2,"0");
           return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
         };
-        const inicioPicker = createDateTimePicker({ value: toLocalDT(inicio) });
-        const fimPicker    = createDateTimePicker({ value: toLocalDT(fim) });
+        const apptPicker = createAppointmentPicker({
+          inicio: toLocalDT(inicio),
+          fim:    toLocalDT(fim),
+        });
         const obs = h("textarea", { class: "input", rows: "3", placeholder: "Observações (opcional)" });
         const btn = h("button", { class: "btn primary", type: "submit" }, ["Salvar"]);
 
@@ -1152,8 +1232,8 @@ async function pacientePage() {
               try {
                 const payload = {
                   paciente_id: p.id,
-                  inicio: new Date(inicioPicker.value).toISOString(),
-                  fim: new Date(fimPicker.value).toISOString(),
+                  inicio: new Date(apptPicker.getInicio()).toISOString(),
+                  fim: new Date(apptPicker.getFim()).toISOString(),
                   status: "agendada",
                   observacoes: obs.value || null,
                 };
@@ -1168,8 +1248,7 @@ async function pacientePage() {
               }
             },
           }, [
-            h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Início"]), inicioPicker.el]),
-            h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Fim"]), fimPicker.el]),
+            apptPicker.el,
             h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Observações"]), obs]),
             h("div", { class: "modal-actions" }, [btn]),
           ]),
