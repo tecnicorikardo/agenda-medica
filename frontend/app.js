@@ -321,11 +321,6 @@ function statusBadge(status) {
 
 function topbar(active) {
   if (!state.me) return null;
-  const links = [
-    ["dashboard", "Dashboard"],
-    ["agenda", "Agenda"],
-    ["pacientes", "Pacientes"],
-  ];
 
   const u = state.me.usuario;
   // Avatar: imagem ou iniciais
@@ -345,13 +340,11 @@ function topbar(active) {
           h("small", {}, [u.nome ? `Dr(a). ${u.nome}` : u.email]),
         ]),
       ]),
-      h("div", { class: "nav" }, links.map(([k, label]) =>
-        h("a", { href: `#/` + k, class: active === k ? "active" : "" }, [label])
-      )),
-      h("div", { class: "row" }, [
-        h("a", { href: "#/perfil", class: `btn${active === "perfil" ? " active" : ""}`, title: "Meu perfil" }, ["⚙ Perfil"]),
+      h("div", { class: "row topbar-actions" }, [
+        h("a", { href: "#/perfil", class: `btn topbar-icon-btn${active === "perfil" ? " active" : ""}`, title: "Meu perfil" }, ["⚙"]),
         h("button", {
-          class: "btn",
+          class: "btn topbar-icon-btn",
+          title: "Sair",
           onclick: async () => {
             try {
               await api("/auth/logout", { method: "POST", body: "{}" });
@@ -359,10 +352,23 @@ function topbar(active) {
             state.me = null;
             location.hash = "#/login";
           },
-        }, ["Sair"]),
+        }, ["⏻"]),
       ]),
     ]),
   ]);
+}
+
+function renderFAB(active) {
+  // Remove FAB anterior se existir
+  document.getElementById("fab-dashboard")?.remove();
+  if (!state.me) return;
+  const fab = h("a", {
+    id: "fab-dashboard",
+    class: "fab" + (active === "dashboard" ? " fab-active" : ""),
+    href: "#/dashboard",
+    title: "Dashboard",
+  }, ["📊"]);
+  document.body.append(fab);
 }
 
 function pageShell(active, content) {
@@ -370,7 +376,8 @@ function pageShell(active, content) {
   app.innerHTML = "";
   const tb = topbar(active);
   if (tb) app.append(tb);
-  app.append(h("div", { class: "container" }, content));
+  app.append(h("div", { class: "container page-content" }, content));
+  renderFAB(active);
 }
 
 function showWelcomeScreen(me) {
@@ -676,6 +683,19 @@ async function dashboardPage() {
         ]),
         h("a", { class: "btn primary", href: "#/agenda" }, ["+ Agendar"]),
       ]),
+      // Cards de acesso rápido — Agenda e Pacientes
+      h("div", { class: "quick-access-grid" }, [
+        h("a", { class: "quick-card", href: "#/agenda" }, [
+          h("div", { class: "quick-card-icon" }, ["📅"]),
+          h("div", { class: "quick-card-label" }, ["Agenda"]),
+          h("div", { class: "quick-card-sub" }, ["Ver consultas do dia"]),
+        ]),
+        h("a", { class: "quick-card", href: "#/pacientes" }, [
+          h("div", { class: "quick-card-icon" }, ["👥"]),
+          h("div", { class: "quick-card-label" }, ["Pacientes"]),
+          h("div", { class: "quick-card-sub" }, ["Buscar e gerenciar"]),
+        ]),
+      ]),
       // KPIs
       h("div", { class: "grid cards" }, [
         kpiCard("Hoje", data.consultas_do_dia, "consultas agendadas"),
@@ -907,13 +927,12 @@ async function agendaPage() {
     });
 
     const m = modal([
-      h("div", { class: "row", style: "margin-bottom:8px" }, [
-        h("h2", { style: "margin:0" }, ["Agendar consulta"]),
-        h("div", { class: "spacer" }),
-        h("button", { class: "btn", type: "button", onclick: () => m.close() }, ["Fechar"]),
+      h("div", { class: "modal-header" }, [
+        h("h2", { class: "modal-title" }, ["Agendar consulta"]),
+        h("button", { class: "btn modal-close-btn", type: "button", onclick: () => m.close() }, ["✕"]),
       ]),
       h("form", {
-        class: "form",
+        class: "form modal-form-stack",
         onsubmit: async (e) => {
           e.preventDefault();
           if (!selected.id) return toast("Selecione um paciente.");
@@ -939,14 +958,12 @@ async function agendaPage() {
           }
         },
       }, [
-        h("div", {}, [h("label", { class: "label" }, ["Paciente"]), paciente]),
+        h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Paciente"]), paciente]),
         results,
-        h("div", { class: "row" }, [
-          h("div", { style: "flex:1" }, [h("label", { class: "label" }, ["Início"]), inicioPicker.el]),
-          h("div", { style: "flex:1" }, [h("label", { class: "label" }, ["Fim"]), fimPicker.el]),
-        ]),
-        h("div", {}, [h("label", { class: "label" }, ["Observações"]), observacoes]),
-        h("div", { class: "row" }, [btn]),
+        h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Início"]), inicioPicker.el]),
+        h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Fim"]), fimPicker.el]),
+        h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Observações"]), observacoes]),
+        h("div", { class: "modal-actions" }, [btn]),
       ]),
     ]);
   }
@@ -978,25 +995,22 @@ async function agendaPage() {
       const mi = String(d.getMinutes()).padStart(2, "0");
       return `${yyyy}-${mm}-${dd}T${hh}:${mi}`;
     };
-    inicio.value = toLocalInput(consulta.inicio);
-    fim.value = toLocalInput(consulta.fim);
     statusSel.value = consulta.status;
 
     const btnSave = h("button", { class: "btn primary", type: "submit" }, ["Salvar"]);
     const btnCancel = h("button", { class: "btn danger", type: "button" }, ["Cancelar"]);
     const m = modal([
-      h("div", { class: "row", style: "margin-bottom:8px" }, [
-        h("h2", { style: "margin:0" }, ["Editar consulta"]),
-        h("div", { class: "spacer" }),
-        h("button", { class: "btn", type: "button", onclick: () => m.close() }, ["Fechar"]),
+      h("div", { class: "modal-header" }, [
+        h("h2", { class: "modal-title" }, ["Editar consulta"]),
+        h("button", { class: "btn modal-close-btn", type: "button", onclick: () => m.close() }, ["✕"]),
       ]),
-      h("div", { class: "sub", style: "margin-bottom:8px" }, [
+      h("div", { class: "modal-patient-info" }, [
         consulta.paciente_nome
           ? `${consulta.paciente_nome} • ${consulta.paciente_telefone || ""}`
           : `Paciente: ${consulta.paciente_id}`,
       ]),
       h("form", {
-        class: "form",
+        class: "form modal-form-stack",
         onsubmit: async (e) => {
           e.preventDefault();
           btnSave.disabled = true;
@@ -1020,13 +1034,11 @@ async function agendaPage() {
           }
         },
       }, [
-        h("div", { class: "row" }, [
-          h("div", { style: "flex:1" }, [h("label", { class: "label" }, ["Início"]), inicioPicker.el]),
-          h("div", { style: "flex:1" }, [h("label", { class: "label" }, ["Fim"]), fimPicker.el]),
-        ]),
-        h("div", {}, [h("label", { class: "label" }, ["Status"]), statusSel]),
-        h("div", {}, [h("label", { class: "label" }, ["Observações"]), observacoes]),
-        h("div", { class: "row" }, [btnSave, btnCancel]),
+        h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Início"]), inicioPicker.el]),
+        h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Fim"]), fimPicker.el]),
+        h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Status"]), statusSel]),
+        h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Observações"]), observacoes]),
+        h("div", { class: "modal-actions" }, [btnSave, btnCancel]),
       ]),
     ]);
     btnCancel.onclick = async () => {
@@ -1126,14 +1138,13 @@ async function pacientePage() {
         const btn = h("button", { class: "btn primary", type: "submit" }, ["Salvar"]);
 
         const m = modal([
-          h("div", { class: "row", style: "margin-bottom:8px" }, [
-            h("h2", { style: "margin:0" }, ["Agendar retorno"]),
-            h("div", { class: "spacer" }),
-            h("button", { class: "btn", type: "button", onclick: () => m.close() }, ["Fechar"]),
+          h("div", { class: "modal-header" }, [
+            h("h2", { class: "modal-title" }, ["Agendar retorno"]),
+            h("button", { class: "btn modal-close-btn", type: "button", onclick: () => m.close() }, ["✕"]),
           ]),
-          h("div", { class: "sub", style: "margin-bottom:8px" }, [`${p.nome_completo} • ${p.telefone}`]),
+          h("div", { class: "modal-patient-info" }, [`${p.nome_completo} • ${p.telefone}`]),
           h("form", {
-            class: "form",
+            class: "form modal-form-stack",
             onsubmit: async (e) => {
               e.preventDefault();
               btn.disabled = true;
@@ -1157,12 +1168,10 @@ async function pacientePage() {
               }
             },
           }, [
-            h("div", { class: "row" }, [
-              h("div", { style: "flex:1" }, [h("label", { class: "label" }, ["Início"]), inicioPicker.el]),
-              h("div", { style: "flex:1" }, [h("label", { class: "label" }, ["Fim"]), fimPicker.el]),
-            ]),
-            h("div", {}, [h("label", { class: "label" }, ["Observações"]), obs]),
-            h("div", { class: "row" }, [btn]),
+            h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Início"]), inicioPicker.el]),
+            h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Fim"]), fimPicker.el]),
+            h("div", { class: "modal-field" }, [h("label", { class: "label modal-label" }, ["Observações"]), obs]),
+            h("div", { class: "modal-actions" }, [btn]),
           ]),
         ]);
       },
@@ -1991,10 +2000,16 @@ async function router() {
   const hash = location.hash.replace("#/", "");
   const page = hash.split("?")[0] || "dashboard";
 
-  if (page === "login") return loginPage();
+  if (page === "login") {
+    document.getElementById("fab-dashboard")?.remove();
+    return loginPage();
+  }
 
   const ok = await ensureMe();
-  if (!ok) return loginPage();
+  if (!ok) {
+    document.getElementById("fab-dashboard")?.remove();
+    return loginPage();
+  }
 
   if (page === "dashboard") return dashboardPage();
   if (page === "agenda") return agendaPage();
