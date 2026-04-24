@@ -2590,3 +2590,146 @@ body.light .action-concluir { border-color: rgba(22,163,74,.4) !important; color
 body.light .action-faltou   { border-color: rgba(217,119,6,.4) !important; color: #d97706 !important; }
 body.light .status-menu-primary { background: rgba(37,99,235,.07); }
 body.light .warn-btn { background: linear-gradient(135deg, #f59e0b, #d97706); color: #fff; }
+
+
+/* =============================================
+   TOPBAR — DROPDOWN DE PERFIL
+   ============================================= */
+
+/* Botão trigger — avatar + chevron */
+.topbar-profile-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px 5px 5px;
+  border-radius: 999px;
+  border: 1px solid rgba(32,50,85,.7);
+  background: rgba(15,27,51,.6);
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.topbar-profile-btn:hover,
+.topbar-profile-btn:focus {
+  background: rgba(110,168,255,.1);
+  border-color: rgba(110,168,255,.4);
+  outline: none;
+}
+.topbar-profile-btn.open {
+  background: rgba(110,168,255,.14);
+  border-color: rgba(110,168,255,.55);
+}
+
+/* Avatar dentro do trigger */
+.topbar-avatar-trigger {
+  width: 30px !important;
+  height: 30px !important;
+  font-size: 11px !important;
+  border: none !important;
+  flex-shrink: 0;
+}
+
+/* Chevron animado */
+.topbar-chevron {
+  display: flex;
+  align-items: center;
+  color: var(--muted);
+  transition: transform .2s;
+}
+.topbar-profile-btn.open .topbar-chevron {
+  transform: rotate(180deg);
+}
+
+/* Wrapper do dropdown */
+.topbar-profile-wrap {
+  position: relative;
+}
+
+/* Menu dropdown */
+.topbar-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 50;
+  min-width: 180px;
+  background: rgba(11,20,40,.98);
+  border: 1px solid rgba(110,168,255,.2);
+  border-radius: 14px;
+  box-shadow: 0 12px 36px rgba(0,0,0,.55);
+  overflow: hidden;
+  animation: dropIn .15s cubic-bezier(.22,1,.36,1) both;
+}
+
+/* Itens do dropdown */
+.topbar-dropdown .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 13px 16px;
+  background: none;
+  border: none;
+  border-bottom: 1px solid rgba(32,50,85,.4);
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  text-align: left;
+  transition: background .1s;
+}
+.topbar-dropdown .dropdown-item:last-child {
+  border-bottom: none;
+}
+.topbar-dropdown .dropdown-item:hover {
+  background: rgba(110,168,255,.1);
+}
+.topbar-dropdown .dropdown-item.active {
+  color: var(--brand);
+  background: rgba(110,168,255,.08);
+}
+.topbar-dropdown .dropdown-item svg {
+  flex-shrink: 0;
+  opacity: .8;
+}
+.topbar-dropdown .danger-item {
+  color: var(--danger);
+}
+.topbar-dropdown .danger-item:hover {
+  background: rgba(255,107,107,.1);
+}
+
+/* Remove estilos antigos que não se aplicam mais */
+.topbar-actions { display: none; }
+.topbar-icon-btn { display: none; }
+
+/* Tema claro */
+body.light .topbar-profile-btn {
+  background: rgba(240,242,247,.8);
+  border-color: rgba(200,210,230,.8);
+}
+body.light .topbar-profile-btn:hover,
+body.light .topbar-profile-btn.open {
+  background: rgba(37,99,235,.07);
+  border-color: rgba(37,99,235,.3);
+}
+body.light .topbar-dropdown {
+  background: #ffffff;
+  border-color: rgba(200,210,230,.8);
+  box-shadow: 0 8px 24px rgba(30,50,100,.12);
+}
+body.light .topbar-dropdown .dropdown-item {
+  color: var(--text);
+  border-color: rgba(200,210,230,.5);
+}
+body.light .topbar-dropdown .dropdown-item:hover {
+  background: rgba(37,99,235,.06);
+}
+body.light .topbar-dropdown .danger-item { color: #dc2626; }
+body.light .topbar-dropdown .danger-item:hover { background: rgba(220,38,38,.06); }
+
+/* Mobile compacto */
+@media (max-width: 480px) {
+  .topbar-profile-btn { padding: 4px 7px 4px 4px; }
+  .topbar-avatar-trigger { width: 26px !important; height: 26px !important; }
+}

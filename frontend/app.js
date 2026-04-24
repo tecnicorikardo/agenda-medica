@@ -785,13 +785,83 @@ function topbar(active) {
   if (!state.me) return null;
 
   const u = state.me.usuario;
-  // Avatar: imagem ou iniciais
   const iniciais = (u.nome || u.email || "?")
     .split(" ").filter(Boolean).slice(0, 2)
     .map(w => w[0].toUpperCase()).join("");
   const avatarEl = u.avatar_url
     ? h("img", { src: u.avatar_url, class: "avatar-img", alt: "Avatar" })
     : h("div", { class: "avatar-iniciais" }, [iniciais]);
+
+  // SVGs inline — sem dependência externa
+  const svgSettings = `<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>`;
+  const svgLogout = `<svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>`;
+  const svgChevron = `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>`;
+
+  // Dropdown de perfil
+  const dropMenu = h("div", { class: "topbar-dropdown", role: "menu", "aria-label": "Menu de perfil" });
+  dropMenu.style.display = "none";
+
+  // Item: Meu Perfil
+  const itemPerfil = h("a", {
+    class: `dropdown-item${active === "perfil" ? " active" : ""}`,
+    href: "#/perfil",
+    role: "menuitem",
+    onclick: () => { dropMenu.style.display = "none"; },
+  });
+  itemPerfil.innerHTML = `${svgSettings} <span>Meu Perfil</span>`;
+
+  // Item: Sair
+  const itemSair = h("button", {
+    class: "dropdown-item danger-item",
+    type: "button",
+    role: "menuitem",
+    "aria-label": "Sair da conta",
+    onclick: async () => {
+      dropMenu.style.display = "none";
+      try { await api("/auth/logout", { method: "POST", body: "{}" }); } catch {}
+      state.me = null;
+      location.hash = "#/login";
+    },
+  });
+  itemSair.innerHTML = `${svgLogout} <span>Sair</span>`;
+
+  dropMenu.append(itemPerfil, itemSair);
+
+  // Botão trigger — usa o avatar do usuário
+  const triggerAvatar = u.avatar_url
+    ? h("img", { src: u.avatar_url, class: "avatar-img topbar-avatar-trigger", alt: "Avatar" })
+    : h("div", { class: "avatar-iniciais topbar-avatar-trigger" }, [iniciais]);
+
+  const chevronEl = h("span", { class: "topbar-chevron" });
+  chevronEl.innerHTML = svgChevron;
+
+  let _open = false;
+  const trigger = h("button", {
+    class: "btn topbar-profile-btn" + (_open ? " open" : ""),
+    type: "button",
+    "aria-haspopup": "true",
+    "aria-expanded": "false",
+    "aria-label": "Abrir menu de perfil",
+    onclick: (e) => {
+      e.stopPropagation();
+      _open = !_open;
+      dropMenu.style.display = _open ? "" : "none";
+      trigger.setAttribute("aria-expanded", String(_open));
+      trigger.classList.toggle("open", _open);
+    },
+  }, [triggerAvatar, chevronEl]);
+
+  // Fecha ao clicar fora
+  document.addEventListener("click", () => {
+    if (_open) {
+      _open = false;
+      dropMenu.style.display = "none";
+      trigger.setAttribute("aria-expanded", "false");
+      trigger.classList.remove("open");
+    }
+  });
+
+  const profileWrap = h("div", { class: "dropdown-wrap topbar-profile-wrap" }, [trigger, dropMenu]);
 
   return h("div", { class: "topbar" }, [
     h("div", { class: "row container" }, [
@@ -802,20 +872,7 @@ function topbar(active) {
           h("small", {}, [u.nome ? `Dr(a). ${u.nome}` : u.email]),
         ]),
       ]),
-      h("div", { class: "row topbar-actions" }, [
-        h("a", { href: "#/perfil", class: `btn topbar-icon-btn${active === "perfil" ? " active" : ""}`, title: "Meu perfil" }, ["⚙"]),
-        h("button", {
-          class: "btn topbar-icon-btn",
-          title: "Sair",
-          onclick: async () => {
-            try {
-              await api("/auth/logout", { method: "POST", body: "{}" });
-            } catch {}
-            state.me = null;
-            location.hash = "#/login";
-          },
-        }, ["⏻"]),
-      ]),
+      profileWrap,
     ]),
   ]);
 }
