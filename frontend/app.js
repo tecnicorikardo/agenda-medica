@@ -403,6 +403,13 @@ function formatDate(d) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+// Retorna true se a data da consulta é hoje ou no passado
+function isTodayOrPast(isoDate) {
+  const hoje = formatDate(new Date());
+  const dia  = formatDate(new Date(isoDate));
+  return dia <= hoje;
+}
+
 function formatTime(dt) {
   const x = new Date(dt);
   const hh = String(x.getHours()).padStart(2, "0");
@@ -422,30 +429,67 @@ function statusBadge(status) {
 }
 
 // Menu rápido de status — abre inline abaixo do badge
-const STATUS_MENU = [
-  { value: "confirmada", icon: "✅", label: "Confirmar" },
-  { value: "agendada",   icon: "📅", label: "Agendado" },
-  { value: "concluida",  icon: "✔️",  label: "Atendimento realizado" },
-  { value: "faltou",     icon: "🚫", label: "Faltou" },
-  { value: "cancelada",  icon: "❌", label: "Cancelar" },
-];
+// Transições válidas por status
+const STATUS_TRANSITIONS = {
+  agendada:   ["confirmada", "concluida", "faltou", "cancelada"],
+  confirmada: ["agendada",   "concluida", "faltou", "cancelada"],
+  concluida:  ["agendada"],
+  cancelada:  ["agendada"],
+  faltou:     ["agendada",   "cancelada"],
+};
+
+const STATUS_MENU_MAP = {
+  confirmada: { icon: "✅", label: "Confirmar",            primary: true  },
+  agendada:   { icon: "📅", label: "Voltar para Agendada", primary: false },
+  concluida:  { icon: "✔️",  label: "Atendimento realizado",primary: true  },
+  faltou:     { icon: "🚫", label: "Faltou",               primary: false },
+  cancelada:  { icon: "❌", label: "Cancelar",             primary: false },
+};
+
+// Toast com ícone e cor por tipo
+function toastStyled(message, type = "info") {
+  const colors = {
+    success: "rgba(67,209,127,.9)",
+    danger:  "rgba(255,107,107,.9)",
+    warn:    "rgba(255,204,102,.9)",
+    info:    "rgba(110,168,255,.9)",
+  };
+  const root = document.body;
+  const wrap = h("div", { class: `toast toast-${type}` }, [
+    h("div", { class: "msg", style: `border-left-color:${colors[type] || colors.info}` }, [message]),
+  ]);
+  root.append(wrap);
+  setTimeout(() => wrap.remove(), 3200);
+}
+
+// Animação de pulse no card ao mudar status
+function pulseCard(cardEl) {
+  cardEl.classList.add("card-pulse");
+  setTimeout(() => cardEl.classList.remove("card-pulse"), 500);
+}
 
 function openStatusMenu(consulta, badgeEl, onChanged) {
-  // Fecha qualquer menu aberto
   document.querySelectorAll(".status-quick-menu").forEach(m => m.remove());
 
-  const menu = h("div", { class: "status-quick-menu" });
+  const menu = h("div", { class: "status-quick-menu", role: "menu" });
+  const transitions = STATUS_TRANSITIONS[consulta.status] || [];
 
-  STATUS_MENU.forEach(({ value, icon, label }) => {
-    if (value === consulta.status) return; // não mostra o atual
+  transitions.forEach((value) => {
+    const { icon, label, primary } = STATUS_MENU_MAP[value] || {};
+    if (!icon) return;
     const item = h("button", {
-      class: `status-menu-item status-menu-${value}`,
+      class: `status-menu-item status-menu-${value}${primary ? " status-menu-primary" : ""}`,
       type: "button",
+      role: "menuitem",
       "aria-label": label,
       onclick: async () => {
         menu.remove();
         if (value === "cancelada") {
           await _doCancelFlow(consulta, onChanged);
+        } else if (value === "concluida") {
+          await openConcluirModal(consulta, onChanged);
+        } else if (value === "faltou") {
+          await openFaltouModal(consulta, onChanged);
         } else {
           await _quickStatus(consulta, value, onChanged);
         }
@@ -454,7 +498,10 @@ function openStatusMenu(consulta, badgeEl, onChanged) {
     menu.append(item);
   });
 
-  // Fecha ao clicar fora
+  if (!transitions.length) {
+    menu.append(h("div", { class: "status-menu-empty" }, ["Nenhuma ação disponível"]));
+  }
+
   setTimeout(() => {
     document.addEventListener("click", function _close(e) {
       if (!menu.contains(e.target)) { menu.remove(); document.removeEventListener("click", _close); }
@@ -462,16 +509,156 @@ function openStatusMenu(consulta, badgeEl, onChanged) {
   }, 10);
 
   badgeEl.parentNode.style.position = "relative";
-
-  // Posicionamento dinâmico: acima se espaço insuficiente abaixo
   badgeEl.parentNode.append(menu);
   setTimeout(() => {
     const rect = menu.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom;
-    if (spaceBelow < 20) {
-      menu.classList.add("open-above");
-    }
+    if (window.innerHeight - rect.bottom < 20) menu.classList.add("open-above");
   }, 10);
+}
+
+// Modal de conclusão com observações
+async function openConcluirModal(consulta, onChanged) {
+  const overlay = h("div", { class: "modal" });
+  const obs = h("textarea", {
+    class: "input",
+    rows: "3",
+    placeholder: "Observações do atendimento (opcional)...",
+  }, [consulta.observacoes || ""]);
+
+  const btnConfirmar = h("button", {
+    class: "btn primary", type: "button",
+    onclick: async () => {
+      btnConfirmar.disabled = true;
+      btnConfirmar.textContent = "Salvando...";
+      try {
+        await api(`/appointments/${consulta.id}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            inicio: consulta.inicio,
+            fim: consulta.fim,
+            status: "concluida",
+            observacoes: obs.value.trim() || null,
+          }),
+        });
+        consulta.status = "concluida";
+        consulta.observacoes = obs.value.trim() || consulta.observacoes;
+        overlay.remove();
+        onChanged();
+        toastStyled("✔️ Atendimento concluído!", "success");
+      } catch (err) {
+        toast(err.message);
+        btnConfirmar.disabled = false;
+        btnConfirmar.textContent = "Confirmar Conclusão";
+      }
+    },
+  }, ["Confirmar Conclusão"]);
+
+  const panel = h("div", { class: "panel" }, [
+    h("div", { class: "modal-header" }, [
+      h("h2", { class: "modal-title" }, ["✔️ Concluir atendimento"]),
+      h("button", { class: "btn modal-close-btn", type: "button", onclick: () => overlay.remove() }, ["✕"]),
+    ]),
+    h("div", { class: "modal-patient-info" }, [
+      consulta.paciente_nome
+        ? `${consulta.paciente_nome} • ${formatTime(consulta.inicio)}`
+        : formatTime(consulta.inicio),
+    ]),
+    h("div", { class: "modal-field" }, [
+      h("label", { class: "label modal-label" }, ["Observações do atendimento"]),
+      obs,
+    ]),
+    h("div", { class: "modal-actions" }, [
+      h("button", { class: "btn", type: "button", onclick: () => overlay.remove() }, ["Cancelar"]),
+      btnConfirmar,
+    ]),
+  ]);
+  overlay.append(panel);
+  overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
+  document.body.append(overlay);
+  setTimeout(() => obs.focus(), 80);
+}
+
+// Modal de faltou com motivo opcional
+async function openFaltouModal(consulta, onChanged) {
+  const MOTIVOS_FALTA = ["Não avisou", "Avisou com antecedência", "Problema de saúde", "Transporte", "Outro"];
+  const overlay = h("div", { class: "modal" });
+
+  const motivoInput = h("textarea", {
+    class: "input",
+    rows: "2",
+    placeholder: "Descreva o motivo...",
+    style: "display:none; margin-top:8px",
+  });
+
+  const chipWrap = h("div", { class: "cancel-chips" },
+    MOTIVOS_FALTA.map(m => {
+      const chip = h("button", {
+        class: "cancel-chip",
+        type: "button",
+        onclick: () => {
+          chipWrap.querySelectorAll(".cancel-chip").forEach(c => c.classList.remove("selected"));
+          chip.classList.add("selected");
+          motivoInput.value = m === "Outro" ? "" : m;
+          motivoInput.style.display = m === "Outro" ? "" : "none";
+          if (m === "Outro") motivoInput.focus();
+        },
+      }, [m]);
+      return chip;
+    })
+  );
+
+  const btnConfirmar = h("button", {
+    class: "btn warn-btn", type: "button",
+    onclick: async () => {
+      btnConfirmar.disabled = true;
+      btnConfirmar.textContent = "Salvando...";
+      const motivo = motivoInput.style.display !== "none"
+        ? motivoInput.value.trim()
+        : (chipWrap.querySelector(".cancel-chip.selected")?.textContent || null);
+      try {
+        await api(`/appointments/${consulta.id}`, {
+          method: "PUT",
+          body: JSON.stringify({
+            inicio: consulta.inicio,
+            fim: consulta.fim,
+            status: "faltou",
+            observacoes: motivo ? `Faltou: ${motivo}` : (consulta.observacoes || null),
+          }),
+        });
+        consulta.status = "faltou";
+        if (motivo) consulta.observacoes = `Faltou: ${motivo}`;
+        overlay.remove();
+        onChanged();
+        toastStyled("🚫 Registrado como faltou", "warn");
+      } catch (err) {
+        toast(err.message);
+        btnConfirmar.disabled = false;
+        btnConfirmar.textContent = "Confirmar Falta";
+      }
+    },
+  }, ["Confirmar Falta"]);
+
+  const panel = h("div", { class: "panel" }, [
+    h("div", { class: "modal-header" }, [
+      h("h2", { class: "modal-title" }, ["🚫 Paciente faltou?"]),
+      h("button", { class: "btn modal-close-btn", type: "button", onclick: () => overlay.remove() }, ["✕"]),
+    ]),
+    h("div", { class: "modal-patient-info" }, [
+      consulta.paciente_nome
+        ? `${consulta.paciente_nome} • ${formatTime(consulta.inicio)}`
+        : formatTime(consulta.inicio),
+    ]),
+    h("p", { class: "muted", style: "margin:0 0 12px; font-size:14px" }, ["Motivo da falta (opcional):"]),
+    chipWrap,
+    motivoInput,
+    h("div", { class: "modal-actions", style: "margin-top:16px" }, [
+      h("button", { class: "btn", type: "button", onclick: () => overlay.remove() }, ["Cancelar"]),
+      btnConfirmar,
+    ]),
+  ]);
+  overlay.append(panel);
+  overlay.addEventListener("click", e => { if (e.target === overlay) overlay.remove(); });
+  document.body.append(overlay);
 }
 
 async function _quickStatus(consulta, novoStatus, onChanged) {
@@ -1085,13 +1272,14 @@ async function agendaPage() {
         class: `badge ${c.status} badge-btn`,
         type: "button",
         title: "Alterar status",
+        "aria-label": "Alterar status da consulta",
         onclick: (e) => {
           e.stopPropagation();
           openStatusMenu(c, badge, () => {
-            // Atualiza badge e card sem recarregar tudo
             badge.className = `badge ${c.status} badge-btn`;
             badge.textContent = { agendada:"Agendada", confirmada:"Confirmada", concluida:"Concluída", cancelada:"Cancelada", faltou:"Faltou" }[c.status] || c.status;
             card.className = `consult-card consult-card-${c.status}`;
+            pulseCard(card);
           });
         },
       }, [{ agendada:"Agendada", confirmada:"Confirmada", concluida:"Concluída", cancelada:"Cancelada", faltou:"Faltou" }[c.status] || c.status]);
@@ -1100,7 +1288,41 @@ async function agendaPage() {
       // Ações rápidas
       const tel = c.paciente_telefone || "";
       const telNum = tel.replace(/\D/g, "");
+
+      // Botões ✔️ e 🚫 — visíveis só para agendada/confirmada em datas de hoje ou passadas
+      const podeConclFalt = (c.status === "agendada" || c.status === "confirmada") && isTodayOrPast(c.inicio);
+
       const acoes = h("div", { class: "consult-actions" }, [
+        podeConclFalt ? h("button", {
+          class: "consult-action-btn action-concluir",
+          title: "Marcar como Concluída",
+          "aria-label": "Marcar como concluída",
+          type: "button",
+          onclick: (e) => {
+            e.stopPropagation();
+            openConcluirModal(c, () => {
+              badge.className = `badge concluida badge-btn`;
+              badge.textContent = "Concluída";
+              card.className = `consult-card consult-card-concluida`;
+              pulseCard(card);
+            });
+          },
+        }, ["✔️"]) : null,
+        podeConclFalt ? h("button", {
+          class: "consult-action-btn action-faltou",
+          title: "Marcar como Faltou",
+          "aria-label": "Marcar como faltou",
+          type: "button",
+          onclick: (e) => {
+            e.stopPropagation();
+            openFaltouModal(c, () => {
+              badge.className = `badge faltou badge-btn`;
+              badge.textContent = "Faltou";
+              card.className = `consult-card consult-card-faltou`;
+              pulseCard(card);
+            });
+          },
+        }, ["🚫"]) : null,
         h("button", {
           class: "consult-action-btn",
           title: "Editar",
