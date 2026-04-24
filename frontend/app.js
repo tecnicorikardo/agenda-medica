@@ -900,7 +900,15 @@ async function agendaPage() {
         consultasCache = await api(`/appointments?day=${dia.value}`);
         listTitle.textContent = "Consultas do dia";
         const dash = await api(`/dashboard?dia=${dia.value}`);
-        const slots = dash.horarios_livres || [];
+        let slots = dash.horarios_livres || [];
+
+        // Se o dia selecionado é hoje, oculta slots cujo horário já passou
+        const hoje = formatDate(new Date());
+        if (dia.value === hoje) {
+          const agora = new Date();
+          slots = slots.filter((s) => new Date(s.inicio) > agora);
+        }
+
         slotsWrap.innerHTML = "";
         if (slots.length) {
           slotsWrap.style.display = "";
@@ -910,6 +918,15 @@ async function agendaPage() {
               ...slots.map((s) =>
                 h("button", { class: "btn slot-btn", type: "button", onclick: () => openCreate(s.inicio) }, [formatTime(s.inicio)])
               ),
+            ])
+          );
+        } else if (dia.value === hoje) {
+          // Todos os slots do dia já passaram
+          slotsWrap.style.display = "";
+          slotsWrap.append(
+            h("div", { class: "slots-bar" }, [
+              h("span", { class: "slots-label muted", style: "font-size:13px" },
+                ["Não há mais horários disponíveis hoje"]),
             ])
           );
         } else {
