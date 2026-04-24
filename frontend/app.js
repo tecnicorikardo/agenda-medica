@@ -274,11 +274,15 @@ function createDateTimePicker({ value = "", onChange = null, label = "" } = {}) 
 // Retorna: { el, getInicio(), getFim() } → strings "YYYY-MM-DDTHH:MM"
 // Validação: fim < início → fim ajustado para início + 30min automaticamente.
 // ─────────────────────────────────────────────────────────────────────────────
-function createAppointmentPicker({ inicio = "", fim = "" } = {}) {
+function createAppointmentPicker({ inicio = "", fim = "", allowPast = false } = {}) {
   const [datePartI, timePartI] = inicio ? inicio.split("T") : ["", ""];
   const [, timePartF]          = fim     ? fim.split("T")     : ["", ""];
 
-  const datePicker = createDatePicker({ value: datePartI });
+  const hoje = formatDate(new Date());
+  const datePicker = createDatePicker({
+    value: datePartI,
+    minDate: allowPast ? null : hoje,
+  });
 
   const timeInicio = h("input", {
     class: "input appt-time",
@@ -310,8 +314,30 @@ function createAppointmentPicker({ inicio = "", fim = "" } = {}) {
     }
   }
 
-  timeInicio.addEventListener("change", _validate);
+  // Validação: horário de início não pode ser no passado (só quando data = hoje)
+  function _validatePast() {
+    if (allowPast) return;
+    const dataSel = datePicker.value || datePartI;
+    if (dataSel !== formatDate(new Date())) return; // só valida se for hoje
+    const agora = new Date();
+    const agoraMin = agora.getHours() * 60 + agora.getMinutes();
+    const [hI, mI] = timeInicio.value.split(":").map(Number);
+    if (hI * 60 + mI <= agoraMin) {
+      // Arredonda para próximos 30 min
+      const proximo = Math.ceil((agoraMin + 1) / 30) * 30;
+      const hh = String(Math.floor(proximo / 60) % 24).padStart(2, "0");
+      const mm = String(proximo % 60).padStart(2, "0");
+      timeInicio.value = `${hh}:${mm}`;
+      timeInicio.classList.add("appt-time-adjusted");
+      setTimeout(() => timeInicio.classList.remove("appt-time-adjusted"), 1200);
+    }
+    _validate();
+  }
+
+  timeInicio.addEventListener("change", () => { _validatePast(); _validate(); });
   timeFim.addEventListener("change", _validate);
+  // Revalida quando a data muda (ex: usuário volta para hoje)
+  datePicker.el.addEventListener("click", () => setTimeout(_validatePast, 300));
 
   const timesRow = h("div", { class: "appt-times-row" }, [
     h("div", { class: "appt-time-group" }, [
@@ -1072,6 +1098,7 @@ async function agendaPage() {
     const apptPicker = createAppointmentPicker({
       inicio: toLocalDT(consulta.inicio),
       fim:    toLocalDT(consulta.fim),
+      allowPast: true,
     });
     const statusSel = h("select", { class: "input" }, [
       h("option", { value: "agendada" }, ["Agendada"]),
