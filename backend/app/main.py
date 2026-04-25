@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -9,11 +10,21 @@ from fastapi.staticfiles import StaticFiles
 
 from backend.app.api.router import api_router
 from backend.app.core.config import get_settings
+from backend.app.services.scheduler import start_scheduler, stop_scheduler
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # ── Startup ──────────────────────────────────────────────────────────
+    start_scheduler()
+    yield
+    # ── Shutdown ─────────────────────────────────────────────────────────
+    stop_scheduler()
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    app = FastAPI(title=settings.app_name)
+    app = FastAPI(title=settings.app_name, lifespan=lifespan)
 
     if settings.cors_origins:
         app.add_middleware(
