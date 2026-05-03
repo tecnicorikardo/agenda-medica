@@ -1,0 +1,15 @@
+{
+  "cookies": [
+    {
+      "name": "agendamedica_token",
+      "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI4OTUwMzAzMS1iM2FkLTRkZjItYTM0ZC00NTYzMzdkNzYxZTkiLCJleHAiOjE3Nzc4NTYwNDB9.tHBRccE9pFIsqzT088l7y-fWrEPzQeeY-COWa0OTINU",
+      "domain": "localhost",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}
