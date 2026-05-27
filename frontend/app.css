@@ -3041,3 +3041,215 @@ body.light .quick-card:hover {
   .quick-card-label { font-size: 15px; }
   .quick-card-icon  { font-size: 28px; }
 }
+
+
+/* =============================================
+   SIDEBAR + LAYOUT v4
+   — sidebar fixa no desktop, bottom-nav no mobile
+   ============================================= */
+
+/* ── Layout wrapper ── */
+.layout-wrap {
+  display: flex;
+  align-items: flex-start;
+  min-height: calc(100vh - 58px); /* desconta topbar */
+}
+
+.layout-main {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ── Sidebar ── */
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 58px; /* altura da topbar */
+  height: calc(100vh - 58px);
+  overflow-y: auto;
+  padding: 20px 12px;
+  border-right: 1px solid rgba(32,50,85,.55);
+  background: rgba(11,18,32,.6);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  /* escondida no mobile — mostrada só no desktop */
+  display: none;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.sidebar-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 600;
+  transition:
+    background var(--transition),
+    color var(--transition),
+    border-color var(--transition),
+    box-shadow var(--transition);
+  border: 1px solid transparent;
+  position: relative;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.sidebar-item:hover {
+  background: rgba(110,168,255,.08);
+  color: var(--text);
+  border-color: rgba(110,168,255,.15);
+}
+
+.sidebar-item:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* Item ativo */
+.sidebar-item.active {
+  background: rgba(110,168,255,.14);
+  color: var(--brand);
+  border-color: rgba(110,168,255,.35);
+  box-shadow: 0 0 0 1px rgba(110,168,255,.1) inset;
+}
+
+/* Barra lateral esquerda no item ativo */
+.sidebar-item.active::before {
+  content: "";
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 60%;
+  border-radius: 0 3px 3px 0;
+  background: var(--brand);
+}
+
+.sidebar-icon {
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+  width: 24px;
+  text-align: center;
+}
+
+.sidebar-label {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ── Desktop: mostra sidebar, ajusta layout ── */
+@media (min-width: 860px) {
+  .sidebar {
+    display: flex; /* mostra a sidebar */
+  }
+
+  /* Remove bottom nav no desktop */
+  .bottom-nav { display: none !important; }
+
+  /* Conteúdo não precisa de padding-bottom para bottom nav */
+  .page-content {
+    padding-bottom: 32px !important;
+  }
+
+  /* Container do conteúdo principal — sem max-width lateral excessivo */
+  .layout-main .container {
+    max-width: var(--max);
+    padding: 20px 24px;
+  }
+}
+
+/* ── Tablet (860–1100px): sidebar mais estreita ── */
+@media (min-width: 860px) and (max-width: 1100px) {
+  .sidebar {
+    width: 64px; /* modo compacto — só ícones */
+    padding: 20px 8px;
+  }
+  .sidebar-label { display: none; }
+  .sidebar-item {
+    justify-content: center;
+    padding: 12px;
+    gap: 0;
+  }
+  .sidebar-item.active::before {
+    left: -8px;
+  }
+  .sidebar-icon { font-size: 20px; width: auto; }
+}
+
+/* ── Mobile: esconde sidebar, mantém bottom nav ── */
+@media (max-width: 859px) {
+  .sidebar { display: none !important; }
+  .bottom-nav { display: flex !important; }
+}
+
+/* ── Tema claro — sidebar ── */
+body.light .sidebar {
+  background: rgba(255,255,255,.85);
+  border-right-color: rgba(200,210,230,.7);
+}
+body.light .sidebar-item:hover {
+  background: rgba(37,99,235,.06);
+  border-color: rgba(37,99,235,.15);
+  color: var(--text);
+}
+body.light .sidebar-item.active {
+  background: rgba(37,99,235,.1);
+  color: var(--brand);
+  border-color: rgba(37,99,235,.3);
+}
+body.light .sidebar-item.active::before {
+  background: var(--brand);
+}
+
+/* ── Bottom nav melhorada (mobile) ── */
+.bottom-nav-item {
+  min-height: 58px; /* área de toque maior */
+  padding: 10px 4px 10px;
+  gap: 4px;
+}
+.bottom-nav-icon {
+  font-size: 22px; /* ícone maior */
+}
+.bottom-nav-label {
+  font-size: 11px; /* label mais legível */
+  font-weight: 700;
+}
+/* Indicador ativo — linha no topo */
+.bottom-nav-item.active::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 20%;
+  right: 20%;
+  height: 2px;
+  border-radius: 0 0 3px 3px;
+  background: var(--brand);
+}
+.bottom-nav-item {
+  position: relative; /* para o ::before funcionar */
+}
+/* Remove o ponto abaixo (substituído pela linha acima) */
+.bottom-nav-item.active::after {
+  display: none;
+}
+
+/* ── Topbar — altura consistente ── */
+.topbar .row {
+  min-height: 58px;
+}

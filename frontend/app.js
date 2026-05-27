@@ -907,12 +907,45 @@ function renderFAB(active) {
   document.body.append(nav);
 }
 
+function buildSidebar(active) {
+  const NAV_ITEMS = [
+    { key: "dashboard", icon: "📊", label: "Dashboard",  href: "#/dashboard" },
+    { key: "agenda",    icon: "📅", label: "Agenda",     href: "#/agenda" },
+    { key: "pacientes", icon: "👥", label: "Pacientes",  href: "#/pacientes" },
+    { key: "perfil",    icon: "⚙️",  label: "Perfil",    href: "#/perfil" },
+  ];
+
+  const items = NAV_ITEMS.map(({ key, icon, label, href }) =>
+    h("a", {
+      class: "sidebar-item" + (active === key ? " active" : ""),
+      href,
+      "aria-label": label,
+      "aria-current": active === key ? "page" : null,
+    }, [
+      h("span", { class: "sidebar-icon", "aria-hidden": "true" }, [icon]),
+      h("span", { class: "sidebar-label" }, [label]),
+    ])
+  );
+
+  return h("aside", { class: "sidebar", "aria-label": "Navegação lateral" }, [
+    h("nav", { class: "sidebar-nav" }, items),
+  ]);
+}
+
 function pageShell(active, content) {
   const app = $("#app");
   app.innerHTML = "";
   const tb = topbar(active);
   if (tb) app.append(tb);
-  app.append(h("div", { class: "container page-content" }, content));
+
+  // Sidebar (desktop ≥ 860px) + conteúdo principal
+  const mainWrap = h("div", { class: "layout-wrap" }, [
+    buildSidebar(active),
+    h("div", { class: "layout-main" }, [
+      h("div", { class: "container page-content" }, content),
+    ]),
+  ]);
+  app.append(mainWrap);
   renderFAB(active);
 }
 
