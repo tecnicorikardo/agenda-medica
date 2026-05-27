@@ -2733,3 +2733,311 @@ body.light .topbar-dropdown .danger-item:hover { background: rgba(220,38,38,.06)
   .topbar-profile-btn { padding: 4px 7px 4px 4px; }
   .topbar-avatar-trigger { width: 26px !important; height: 26px !important; }
 }
+
+
+/* =============================================
+   UI/UX REFINEMENTS v3
+   — border-radius, sombras, hover states,
+     gradientes, PWA banner, login footer,
+     botões Excel com label, avatar genérico
+   ============================================= */
+
+/* ── 1. Variáveis de design refinadas ── */
+:root {
+  --radius:   14px;
+  --radius-sm: 10px;
+  --radius-xs:  8px;
+  --transition: .18s cubic-bezier(.4,0,.2,1);
+  --shadow-card: 0 2px 8px rgba(0,0,0,.28), 0 0 0 1px rgba(110,168,255,.06);
+  --shadow-modal: 0 8px 40px rgba(0,0,0,.55), 0 0 0 1px rgba(110,168,255,.08);
+  --shadow-btn:   0 2px 8px rgba(0,0,0,.25);
+}
+body.light {
+  --shadow-card:  0 2px 10px rgba(30,50,100,.09), 0 0 0 1px rgba(37,99,235,.05);
+  --shadow-modal: 0 8px 40px rgba(30,50,100,.18), 0 0 0 1px rgba(37,99,235,.07);
+  --shadow-btn:   0 2px 8px rgba(30,50,100,.12);
+}
+
+/* ── 2. Cards — sombra e radius consistentes ── */
+.card {
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--transition), border-color var(--transition);
+}
+.card:hover {
+  box-shadow: 0 4px 18px rgba(0,0,0,.35), 0 0 0 1px rgba(110,168,255,.1);
+}
+body.light .card:hover {
+  box-shadow: 0 4px 18px rgba(30,50,100,.13), 0 0 0 1px rgba(37,99,235,.08);
+}
+
+/* ── 3. Modais — sombra mais profunda ── */
+.modal .panel {
+  box-shadow: var(--shadow-modal);
+}
+
+/* ── 4. Botões — hover/focus/active uniformes com transição ── */
+.btn {
+  transition:
+    background var(--transition),
+    border-color var(--transition),
+    box-shadow var(--transition),
+    transform var(--transition),
+    opacity var(--transition);
+  border-radius: var(--radius-sm);
+}
+.btn:hover:not(:disabled) {
+  box-shadow: var(--shadow-btn);
+  transform: translateY(-1px);
+}
+.btn:active:not(:disabled) {
+  transform: translateY(0) scale(.97);
+  box-shadow: none;
+}
+.btn:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+.btn.primary:hover:not(:disabled) {
+  box-shadow: 0 4px 16px rgba(110,168,255,.4);
+  opacity: .93;
+}
+body.light .btn.primary:hover:not(:disabled) {
+  box-shadow: 0 4px 16px rgba(37,99,235,.3);
+}
+
+/* ── 5. Inputs — focus state mais visível ── */
+.input,
+select,
+textarea {
+  border-radius: var(--radius-sm) !important;
+  transition:
+    border-color var(--transition),
+    box-shadow var(--transition);
+}
+.input:focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(110,168,255,.7) !important;
+  box-shadow: 0 0 0 3px rgba(110,168,255,.16) !important;
+}
+body.light .input:focus,
+body.light select:focus,
+body.light textarea:focus {
+  border-color: rgba(37,99,235,.55) !important;
+  box-shadow: 0 0 0 3px rgba(37,99,235,.1) !important;
+}
+
+/* ── 6. Date picker trigger — mesmo estilo dos inputs ── */
+.dp-trigger {
+  border-radius: var(--radius-sm) !important;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+.dp-trigger:focus {
+  border-color: rgba(110,168,255,.7) !important;
+  box-shadow: 0 0 0 3px rgba(110,168,255,.16) !important;
+}
+
+/* ── 7. Cards de consulta — hover sutil ── */
+.consult-card {
+  border-radius: var(--radius-sm);
+  transition: transform var(--transition), background var(--transition), box-shadow var(--transition);
+}
+.consult-card:hover {
+  box-shadow: 0 3px 14px rgba(0,0,0,.3);
+}
+body.light .consult-card:hover {
+  box-shadow: 0 3px 14px rgba(30,50,100,.1);
+}
+
+/* ── 8. Patient rows — hover mais suave ── */
+.patient-row {
+  border-radius: var(--radius-sm);
+  transition: background var(--transition), border-color var(--transition), box-shadow var(--transition);
+}
+.patient-row:hover {
+  box-shadow: 0 2px 10px rgba(0,0,0,.2);
+}
+
+/* ── 9. Botões Excel — sempre mostram label (ícone + texto) ── */
+.excel-label {
+  display: inline !important; /* sobrescreve o display:none do breakpoint */
+}
+.btn-excel {
+  padding: 9px 14px;
+  gap: 8px;
+  border-radius: var(--radius-sm);
+}
+/* Em telas muito pequenas (< 400px) esconde só o texto, mantém ícone */
+@media (max-width: 400px) {
+  .excel-label { display: none !important; }
+  .btn-excel   { padding: 9px 10px; }
+}
+
+/* ── 10. Avatar genérico — ícone de pessoa em SVG ── */
+/* Quando não há foto, o avatar de iniciais já existe.
+   Adicionamos um fallback visual mais "avatar" com ícone de pessoa
+   para o caso de iniciais vazias. */
+.avatar-iniciais:empty::before,
+.avatar-iniciais-lg:empty::before,
+.patient-avatar:empty::before,
+.search-avatar:empty::before {
+  content: "👤";
+  font-size: 1em;
+}
+
+/* ── 11. PWA Banner — discreto, dispensável, não reaparece ── */
+.pwa-banner {
+  /* Reposiciona para o topo como alternativa menos intrusiva */
+  top: 0;
+  bottom: auto;
+  border-top: none;
+  border-bottom: 1px solid rgba(110,168,255,.2);
+  box-shadow: 0 4px 20px rgba(0,0,0,.3);
+  animation: slideDown .35s cubic-bezier(.22,1,.36,1) both;
+  padding: 10px 16px;
+  gap: 10px;
+}
+@keyframes slideDown {
+  from { transform: translateY(-100%); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+/* Botão de fechar discreto */
+.pwa-banner-close {
+  background: none;
+  border: none;
+  color: var(--muted);
+  font-size: 18px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  line-height: 1;
+  flex-shrink: 0;
+  transition: color var(--transition), background var(--transition);
+}
+.pwa-banner-close:hover {
+  color: var(--text);
+  background: rgba(110,168,255,.1);
+}
+/* Ícone menor no banner do topo */
+.pwa-banner-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+}
+.pwa-banner-text strong { font-size: 13px; }
+.pwa-banner-text span   { font-size: 11px; }
+/* Botão de instalar no banner */
+.pwa-banner-install {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+body.light .pwa-banner {
+  background: rgba(255,255,255,.97);
+  border-color: rgba(200,210,230,.8);
+  box-shadow: 0 4px 20px rgba(30,50,100,.1);
+}
+
+/* ── 12. Login footer — integrado, menos chamativo ── */
+.login-footer {
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--muted);
+  opacity: .7;
+  text-align: center;
+  letter-spacing: .1px;
+}
+/* Remove o estilo de "dica" chamativa — vira texto simples */
+.login-footer::before {
+  content: "💡 ";
+  font-size: 10px;
+  opacity: .6;
+}
+
+/* ── 13. Dropdown de perfil — radius e sombra refinados ── */
+.topbar-dropdown {
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-modal);
+}
+.topbar-dropdown .dropdown-item {
+  border-radius: 0;
+  transition: background var(--transition);
+}
+.topbar-dropdown .dropdown-item:first-child {
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+}
+.topbar-dropdown .dropdown-item:last-child {
+  border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+}
+
+/* ── 14. Dropdown de ações (⋯) — mesmo refinamento ── */
+.dropdown-menu {
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow-modal);
+}
+.dropdown-item {
+  transition: background var(--transition);
+}
+
+/* ── 15. Badges — radius e transição ── */
+.badge {
+  border-radius: 999px;
+  transition: opacity var(--transition), transform var(--transition);
+}
+.badge-btn:hover { transform: scale(1.04); }
+
+/* ── 16. Quick cards (dashboard) — sombra e hover ── */
+.quick-card {
+  box-shadow: var(--shadow-card);
+  transition: background var(--transition), transform var(--transition),
+              border-color var(--transition), box-shadow var(--transition);
+}
+.quick-card:hover {
+  box-shadow: 0 6px 24px rgba(110,168,255,.2), 0 0 0 1px rgba(110,168,255,.2);
+}
+body.light .quick-card:hover {
+  box-shadow: 0 6px 24px rgba(37,99,235,.12), 0 0 0 1px rgba(37,99,235,.12);
+}
+
+/* ── 17. Slots de horário livre — hover mais claro ── */
+.slot-btn {
+  border-radius: var(--radius-sm);
+  transition: background var(--transition), border-color var(--transition),
+              transform var(--transition), box-shadow var(--transition);
+}
+.slot-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 10px rgba(110,168,255,.25);
+}
+
+/* ── 18. Toast — radius e sombra ── */
+.toast .msg {
+  border-radius: var(--radius-sm);
+  box-shadow: 0 4px 20px rgba(0,0,0,.4);
+}
+
+/* ── 19. Chips de cancelamento — radius ── */
+.cancel-chip {
+  border-radius: 999px;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+/* ── 20. Responsividade — ajustes de grid em telas médias ── */
+@media (min-width: 480px) and (max-width: 860px) {
+  .col-6 { grid-column: span 6; }
+  .col-4 { grid-column: span 6; }
+  .col-8 { grid-column: span 12; }
+}
+@media (max-width: 479px) {
+  .col-6,
+  .col-4,
+  .col-8 { grid-column: span 12; }
+  .quick-access-grid { grid-template-columns: 1fr 1fr; gap: 8px; }
+  .quick-card { padding: 16px 8px; }
+  .quick-card-label { font-size: 15px; }
+  .quick-card-icon  { font-size: 28px; }
+}

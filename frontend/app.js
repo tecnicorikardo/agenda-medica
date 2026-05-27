@@ -2894,33 +2894,41 @@ window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   _deferredInstall = e;
 
-  // Só mostra se não foi dispensado antes
-  if (localStorage.getItem("pwa-dismissed")) return;
+  // Não mostra se já foi dispensado nesta sessão ou permanentemente
+  if (sessionStorage.getItem("pwa-dismissed") || localStorage.getItem("pwa-dismissed")) return;
 
-  const banner = document.createElement("div");
-  banner.className = "pwa-banner";
-  banner.innerHTML = `
-    <img src="/icons/icon-96.png" class="pwa-banner-icon" alt="Ícone">
-    <div class="pwa-banner-text">
-      <strong>Instalar Agenda Médica</strong>
-      <span>Adicione à tela inicial para acesso rápido, mesmo offline.</span>
-    </div>
-    <button class="btn primary" id="pwa-install-btn" style="white-space:nowrap">Instalar</button>
-    <button class="btn" id="pwa-dismiss-btn" style="padding:10px 8px; color:var(--muted)">✕</button>
-  `;
-  document.body.append(banner);
+  // Aguarda 3s para não aparecer imediatamente ao abrir o app
+  setTimeout(() => {
+    if (document.querySelector(".pwa-banner")) return;
 
-  document.getElementById("pwa-install-btn").onclick = async () => {
-    _deferredInstall.prompt();
-    const { outcome } = await _deferredInstall.userChoice;
-    banner.remove();
-    if (outcome === "accepted") toast("✅ App instalado!");
-    _deferredInstall = null;
-  };
-  document.getElementById("pwa-dismiss-btn").onclick = () => {
-    banner.remove();
-    localStorage.setItem("pwa-dismissed", "1");
-  };
+    const banner = document.createElement("div");
+    banner.className = "pwa-banner";
+    banner.setAttribute("role", "banner");
+    banner.setAttribute("aria-label", "Instalar aplicativo");
+    banner.innerHTML = `
+      <img src="/icons/icon-96.png" class="pwa-banner-icon" alt="">
+      <div class="pwa-banner-text">
+        <strong>Instalar Agenda Médica</strong>
+        <span>Acesso rápido na tela inicial, funciona offline.</span>
+      </div>
+      <button class="btn primary pwa-banner-install" id="pwa-install-btn">Instalar</button>
+      <button class="pwa-banner-close" id="pwa-dismiss-btn" aria-label="Fechar">✕</button>
+    `;
+    document.body.prepend(banner); // topo da página
+
+    document.getElementById("pwa-install-btn").onclick = async () => {
+      _deferredInstall.prompt();
+      const { outcome } = await _deferredInstall.userChoice;
+      banner.remove();
+      if (outcome === "accepted") toast("✅ App instalado!");
+      _deferredInstall = null;
+    };
+    document.getElementById("pwa-dismiss-btn").onclick = () => {
+      banner.remove();
+      // Guarda na sessão (some ao fechar o browser) — não persiste para sempre
+      sessionStorage.setItem("pwa-dismissed", "1");
+    };
+  }, 3000);
 });
 
 window.addEventListener("appinstalled", () => {
