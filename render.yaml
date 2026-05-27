@@ -1,0 +1,39 @@
+services:
+  - type: web
+    name: agenda-medica
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: agenda-medica-db
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: AUTH_COOKIE_SECURE
+        value: "true"
+      - key: APP_TIMEZONE
+        value: "America/Sao_Paulo"
+      - key: APP_NAME
+        value: "Agenda Médica"
+      # E-mail (preencha manualmente no dashboard do Render)
+      # - key: SMTP_HOST
+      #   value: smtp.gmail.com
+      # - key: SMTP_PORT
+      #   value: "587"
+      # - key: SMTP_USE_TLS
+      #   value: "true"
+      # - key: SMTP_USER
+      #   value: seu@gmail.com
+      # - key: SMTP_PASSWORD
+      #   value: sua-senha-de-app
+      # - key: SMTP_FROM_EMAIL
+      #   value: seu@gmail.com
+      # - key: SMTP_FROM_NAME
+      #   value: Agenda Médica
+
+databases:
+  - name: agenda-medica-db
+    databaseName: agenda_medica
+    user: agenda_medica
+    plan: free

@@ -6,85 +6,129 @@ Sistema web profissional para agenda médica, pensado para uso real no dia a dia
 
 - **Frontend:** HTML/CSS/JS responsivo (SPA leve)
 - **Backend:** Python + FastAPI
-- **Banco:** Supabase (Postgres)
-- **Deploy:** Railway (Procfile pronto)
+- **Banco:** PostgreSQL (qualquer provedor — Render, Railway, local, etc.)
+- **Migrations:** Alembic (tabelas criadas automaticamente no primeiro deploy)
+- **Deploy:** Render (render.yaml pronto) ou qualquer serviço com suporte a Docker
 
 ## Estrutura do projeto
 
-- `backend/` API, autenticação, regras de agenda, modelos e endpoints
-- `frontend/` interface web responsiva
-- `docs/` SQL do Supabase e documentação
-
-## Funcionalidades (MVP funcional)
-
-- Login/Logout com cookie HttpOnly (rotas `/api` protegidas)
-- Dashboard do dia (consultas, canceladas, concluídas, próximos, horários livres)
-- Agenda: criar, reagendar, cancelar, confirmar, concluir, marcar falta
-- Pacientes: CRUD + busca rápida por nome/telefone
-- Estrutura pronta para lembretes (tabela `lembretes`)
+```
+backend/    API, autenticação, regras de agenda, modelos e endpoints
+frontend/   interface web responsiva
+alembic/    migrations do banco de dados
+docs/       documentação
+```
 
 ## Como rodar localmente
 
-### 1) Criar tabelas no Supabase
+### 1) Criar banco PostgreSQL local
 
-1. Crie um projeto no Supabase
-2. Abra o **SQL Editor**
-3. Execute o arquivo `docs/supabase_schema.sql`
+Você pode usar Docker para subir um Postgres rapidamente:
+
+```bash
+docker run -d --name agenda-db -e POSTGRES_PASSWORD=senha -e POSTGRES_DB=agenda_medica -p 5432:5432 postgres:16
+```
+
+Ou use qualquer instalação local de PostgreSQL.
 
 ### 2) Configurar variáveis de ambiente
 
-1. Copie `.env.example` para `.env`
-2. Ajuste `DATABASE_URL` (Postgres do Supabase) e `JWT_SECRET_KEY`
+```bash
+cp .env.example .env
+```
 
-### 3) Instalar dependências e executar
+Edite o `.env` e ajuste pelo menos:
+- `DATABASE_URL` — string de conexão com o banco
+- `JWT_SECRET_KEY` — chave secreta (gere com `python -c "import secrets; print(secrets.token_hex(32))"`)
+
+### 3) Instalar dependências
 
 ```bash
 python -m venv .venv
-.\.venv\Scripts\activate
+.\.venv\Scripts\activate      # Windows
+# source .venv/bin/activate   # Linux/Mac
 pip install -r requirements.txt
+```
+
+### 4) Rodar migrations (cria as tabelas)
+
+```bash
+python -m backend.scripts.migrate
+```
+
+### 5) Criar o primeiro usuário
+
+```bash
+python -m backend.scripts.create_user
+```
+
+### 6) Iniciar o servidor
+
+```bash
 uvicorn backend.app.main:app --reload
 ```
 
 Abra: `http://localhost:8000`
 
-### 4) Criar o primeiro usuário
+---
 
-```bash
-python backend/scripts/create_user.py
+## Deploy no Render (recomendado)
+
+### Opção A — render.yaml (automático)
+
+1. Suba o repositório no GitHub
+2. No Render, clique em **New → Blueprint** e selecione o repositório
+3. O Render vai ler o `render.yaml` e criar automaticamente:
+   - Um **Web Service** (Docker) para o app
+   - Um **PostgreSQL** gratuito vinculado ao app
+4. Aguarde o build. As migrations rodam automaticamente no startup.
+5. Após o deploy, abra o Shell do serviço e crie o primeiro usuário:
+   ```bash
+   python -m backend.scripts.create_user
+   ```
+
+### Opção B — configuração manual
+
+1. No Render, crie um **PostgreSQL** (Free tier)
+2. Crie um **Web Service** com:
+   - **Runtime:** Docker
+   - **Repo:** seu repositório GitHub
+3. Configure as variáveis de ambiente:
+   ```
+   DATABASE_URL        = (Internal Database URL do banco criado)
+   JWT_SECRET_KEY      = (gere uma chave forte)
+   AUTH_COOKIE_SECURE  = true
+   APP_TIMEZONE        = America/Sao_Paulo
+   ```
+4. As migrations rodam automaticamente no startup do container.
+
+### Variáveis opcionais (e-mail e push)
+
+```
+SMTP_HOST           = smtp.gmail.com
+SMTP_PORT           = 587
+SMTP_USE_TLS        = true
+SMTP_USER           = seu@gmail.com
+SMTP_PASSWORD       = sua-senha-de-app
+SMTP_FROM_EMAIL     = seu@gmail.com
+SMTP_FROM_NAME      = Agenda Médica
 ```
 
-## Como conectar no Supabase
+---
 
-- Use a string Postgres do Supabase em `DATABASE_URL` (Settings → Database → Connection string).
-- Recomendado: crie uma senha forte para `JWT_SECRET_KEY`.
+## Observação: senha com caracteres especiais
 
-### Observação: senha com caracteres especiais
-
-Se sua senha do Postgres tiver caracteres especiais (ex: `@`, `:`, espaço, acentos), você deve **URL-encodar** a senha dentro do `DATABASE_URL`, senão a conexão pode falhar.
-
-One-liner para gerar a senha encoded:
+Se sua senha do PostgreSQL tiver caracteres especiais (`@`, `:`, espaço, acentos), você deve **URL-encodar** a senha dentro do `DATABASE_URL`:
 
 ```bash
 python -c "import urllib.parse; print(urllib.parse.quote_plus('SUA_SENHA'))"
 ```
 
-## Deploy no Railway
-
-1. Suba o repositório no GitHub (push feito por você)
-2. No Railway, crie um novo projeto a partir do repo
-3. Configure variáveis de ambiente:
-   - `DATABASE_URL`
-   - `JWT_SECRET_KEY`
-   - `AUTH_COOKIE_SECURE=true`
-4. Railway detecta `Procfile` e usa o comando:
-   - `uvicorn backend.app.main:app --host 0.0.0.0 --port $PORT`
-
-Alternativa (mais previsível): use o `Dockerfile` (Railway suporta deploy por Dockerfile).
+---
 
 ## Melhorias futuras
 
-- Multiusuários completo (vincular pacientes/consultas por `usuario_id`)
-- Constraint no Postgres para evitar conflitos no banco
 - Calendário semanal/mensal
-- Integração WhatsApp (webhook + templates) usando tabela `lembretes`
+- Integração WhatsApp (webhook + templates)
 - Auditoria e logs
+- Multiusuários com permissões
