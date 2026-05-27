@@ -2723,6 +2723,52 @@ async function perfilPage() {
       h("div", { class: "row", style: "margin-top:12px; gap:8px" }, [btnAtivarPush, btnTestarPush]),
     ]);
     cardsGrid.append(pushCard);
+
+    // ── Card de teste de e-mail ──────────────────────────────────────────────
+    const emailTestStatus = h("div", { class: "push-status", style: "min-height:0" });
+    const btnTestarEmail = h("button", { class: "btn primary", type: "button" }, ["📧 Enviar e-mail de teste"]);
+
+    btnTestarEmail.onclick = async () => {
+      btnTestarEmail.disabled = true;
+      btnTestarEmail.textContent = "Enviando...";
+      emailTestStatus.className = "push-status";
+      emailTestStatus.innerHTML = "";
+      try {
+        const r = await api("/email/test", { method: "POST", body: "{}" });
+        const res = r.resultados || {};
+        let html = "";
+        if (res.medico) {
+          const icon = res.medico.ok ? "✅" : "⚠️";
+          html += `<div>${icon} <strong>Médico:</strong> ${res.medico.email || ""} — ${res.medico.detalhe}</div>`;
+        }
+        if (res.paciente) {
+          const icon = res.paciente.ok ? "✅" : "⚠️";
+          const pac = res.paciente.paciente ? ` (${res.paciente.paciente})` : "";
+          html += `<div>${icon} <strong>Paciente${pac}:</strong> ${res.paciente.email || ""} — ${res.paciente.detalhe}</div>`;
+        }
+        emailTestStatus.innerHTML = html || "Concluído.";
+        emailTestStatus.className = "push-status push-ok";
+      } catch (err) {
+        emailTestStatus.className = "push-status push-warn";
+        emailTestStatus.textContent = "Erro: " + err.message;
+      } finally {
+        btnTestarEmail.disabled = false;
+        btnTestarEmail.textContent = "📧 Enviar e-mail de teste";
+      }
+    };
+
+    const emailCard = h("div", { class: "card col-12" }, [
+      h("div", { class: "row", style: "margin-bottom:12px" }, [
+        h("h2", { style: "margin:0" }, ["📧 Teste de e-mail"]),
+      ]),
+      h("div", { class: "sub", style: "margin-bottom:14px" }, [
+        "Dispara um e-mail de teste agora para o médico (e-mail para lembretes) e para o paciente da próxima consulta. ",
+        "Útil para verificar se o SMTP está configurado corretamente.",
+      ]),
+      emailTestStatus,
+      h("div", { class: "row", style: "margin-top:12px" }, [btnTestarEmail]),
+    ]);
+    cardsGrid.append(emailCard);
   }
 
   await atualizarStatusPush();
