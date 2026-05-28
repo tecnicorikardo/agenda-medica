@@ -36,6 +36,7 @@ def _as_with_paciente(consulta) -> dict:
         "updated_at": consulta.updated_at,
         "paciente_nome": paciente.nome_completo if paciente else "",
         "paciente_telefone": paciente.telefone if paciente else "",
+        "paciente_email": paciente.email if paciente else None,
     }
 
 

@@ -3253,3 +3253,45 @@ body.light .sidebar-item.active::before {
 .topbar .row {
   min-height: 58px;
 }
+
+/* =============================================
+   BOTÕES DE AÇÃO DO CARD — WhatsApp + E-mail
+   ============================================= */
+
+/* WhatsApp — verde */
+.consult-action-wa {
+  border-color: rgba(37,211,102,.4) !important;
+  color: #25d366 !important;
+  font-size: 14px !important;
+}
+.consult-action-wa:hover {
+  background: rgba(37,211,102,.14) !important;
+  border-color: rgba(37,211,102,.7) !important;
+}
+
+/* E-mail — azul discreto */
+.consult-action-email {
+  border-color: rgba(110,168,255,.35) !important;
+  color: var(--brand) !important;
+  font-size: 14px !important;
+}
+.consult-action-email:hover {
+  background: rgba(110,168,255,.14) !important;
+  border-color: rgba(110,168,255,.65) !important;
+}
+
+/* Tema claro */
+body.light .consult-action-wa {
+  border-color: rgba(22,163,74,.35) !important;
+  color: #16a34a !important;
+}
+body.light .consult-action-wa:hover {
+  background: rgba(22,163,74,.08) !important;
+}
+body.light .consult-action-email {
+  border-color: rgba(37,99,235,.3) !important;
+  color: var(--brand) !important;
+}
+body.light .consult-action-email:hover {
+  background: rgba(37,99,235,.07) !important;
+}

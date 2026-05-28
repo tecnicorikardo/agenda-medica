@@ -39,3 +39,4 @@ class ConsultaOut(ConsultaBase):
 class ConsultaWithPaciente(ConsultaOut):
     paciente_nome: str = Field(alias="paciente_nome")
     paciente_telefone: str = Field(alias="paciente_telefone")
+    paciente_email: str | None = Field(default=None, alias="paciente_email")

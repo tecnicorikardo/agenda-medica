@@ -1379,6 +1379,19 @@ async function agendaPage() {
       const tel = c.paciente_telefone || "";
       const telNum = tel.replace(/\D/g, "");
 
+      // Mensagem pré-formatada para WhatsApp
+      const _nomeP    = (c.paciente_nome || "").split(" ")[0] || "paciente";
+      const _data     = new Date(c.inicio).toLocaleDateString("pt-BR", { weekday:"long", day:"2-digit", month:"long" });
+      const _hora     = formatTime(c.inicio);
+      const _clinica  = (state.me?.usuario?.nome_clinica) || "nossa clínica";
+      const _medico   = (state.me?.usuario?.nome) ? `Dr(a). ${state.me.usuario.nome}` : _clinica;
+      const _waMsgRaw = `Olá, ${_nomeP}! 👋\n\nPassando para lembrar da sua consulta:\n\n📅 *${_data}* às *${_hora}*\n🏥 ${_clinica} — ${_medico}\n\nQualquer dúvida, estamos à disposição! 😊`;
+      const _waMsg    = encodeURIComponent(_waMsgRaw);
+      const _waNum    = telNum.startsWith("55") ? telNum : "55" + telNum;
+
+      // E-mail do paciente (se disponível via cache — pode ser null)
+      const _emailPac = c.paciente_email || null;
+
       // Botões ✔️ e 🚫 — visíveis só para agendada/confirmada em datas de hoje ou passadas
       const podeConclFalt = (c.status === "agendada" || c.status === "confirmada") && isTodayOrPast(c.inicio);
 
@@ -1427,15 +1440,24 @@ async function agendaPage() {
           href: `tel:${telNum}`,
           onclick: (e) => e.stopPropagation(),
         }, ["📞"]) : null,
+        // WhatsApp com mensagem pré-formatada de lembrete
         telNum ? h("a", {
-          class: "consult-action-btn",
-          title: "WhatsApp",
-          "aria-label": `Enviar WhatsApp para ${c.paciente_nome || "paciente"}`,
-          href: `https://wa.me/55${telNum}`,
+          class: "consult-action-btn consult-action-wa",
+          title: "Enviar lembrete via WhatsApp",
+          "aria-label": `WhatsApp para ${c.paciente_nome || "paciente"}`,
+          href: `https://wa.me/${_waNum}?text=${_waMsg}`,
           target: "_blank",
           rel: "noopener",
           onclick: (e) => e.stopPropagation(),
-        }, ["💬"]) : null,
+        }, ["🟢"]) : null,
+        // E-mail direto (mailto) — só aparece se paciente tiver e-mail
+        _emailPac ? h("a", {
+          class: "consult-action-btn consult-action-email",
+          title: `Enviar e-mail para ${_emailPac}`,
+          "aria-label": `Enviar e-mail para ${c.paciente_nome || "paciente"}`,
+          href: `mailto:${_emailPac}?subject=${encodeURIComponent(`Lembrete de consulta — ${_clinica}`)}&body=${encodeURIComponent(_waMsgRaw)}`,
+          onclick: (e) => e.stopPropagation(),
+        }, ["✉️"]) : null,
       ]);
 
       const card = h("div", { class: `consult-card consult-card-${c.status}` }, [
