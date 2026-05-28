@@ -1303,6 +1303,89 @@ async function dashboardPage() {
   }
 }
 
+// ── Menu de ações da consulta (bottom-sheet) ─────────────────────────────────
+function openConsultMenu({ consulta: c, telNum, _waNum, _waMsg, _waMsgRaw, _emailPac, _clinica, podeConclFalt, onConcluir, onFaltou, onEdit }) {
+  const overlay = h("div", { class: "modal consult-menu-overlay" });
+  const panel   = h("div", { class: "consult-menu-panel" });
+
+  function close() { overlay.remove(); }
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+
+  // Cabeçalho
+  const nomePac = c.paciente_nome || "Paciente";
+  const hora    = formatTime(c.inicio);
+  panel.append(
+    h("div", { class: "consult-menu-header" }, [
+      h("div", { class: "consult-menu-title" }, [nomePac]),
+      h("div", { class: "consult-menu-sub" }, [`Consulta às ${hora}`]),
+      h("button", { class: "consult-menu-close", type: "button", "aria-label": "Fechar", onclick: close }, ["✕"]),
+    ])
+  );
+
+  // Grade de botões
+  const grid = h("div", { class: "consult-menu-grid" });
+
+  function menuBtn({ icon, label, cls = "", onclick }) {
+    const btn = h("button", { class: `consult-menu-item ${cls}`, type: "button", onclick: () => { close(); onclick(); } }, [
+      h("span", { class: "consult-menu-item-icon" }, [icon]),
+      h("span", { class: "consult-menu-item-label" }, [label]),
+    ]);
+    return btn;
+  }
+  function menuLink({ icon, label, cls = "", href, target = "_self" }) {
+    return h("a", { class: `consult-menu-item ${cls}`, href, target, rel: target === "_blank" ? "noopener" : null, onclick: close }, [
+      h("span", { class: "consult-menu-item-icon" }, [icon]),
+      h("span", { class: "consult-menu-item-label" }, [label]),
+    ]);
+  }
+
+  // Editar
+  grid.append(menuBtn({ icon: "✏️", label: "Editar", onclick: onEdit }));
+
+  // Alterar status
+  grid.append(menuBtn({ icon: "🔄", label: "Status", onclick: () => {
+    const badge = document.createElement("button"); // dummy para openStatusMenu
+    badge.className = `badge ${c.status} badge-btn`;
+    badge.textContent = c.status;
+    openStatusMenu(c, badge, () => {});
+  }}));
+
+  // Concluir
+  if (podeConclFalt) {
+    grid.append(menuBtn({ icon: "✅", label: "Concluir", cls: "consult-menu-ok", onclick: () => openConcluirModal(c, onConcluir) }));
+    grid.append(menuBtn({ icon: "🚫", label: "Faltou",   cls: "consult-menu-warn", onclick: () => openFaltouModal(c, onFaltou) }));
+  }
+
+  // Ligar
+  if (telNum) {
+    grid.append(menuLink({ icon: "📞", label: "Ligar", href: `tel:${telNum}` }));
+  }
+
+  // WhatsApp
+  if (telNum) {
+    grid.append(menuLink({ icon: "💬", label: "WhatsApp", cls: "consult-menu-wa", href: `https://wa.me/${_waNum}?text=${_waMsg}`, target: "_blank" }));
+  }
+
+  // E-mail
+  if (_emailPac) {
+    grid.append(menuLink({
+      icon: "✉️", label: "E-mail", cls: "consult-menu-email",
+      href: `mailto:${_emailPac}?subject=${encodeURIComponent(`Lembrete — ${_clinica}`)}&body=${encodeURIComponent(_waMsgRaw)}`,
+    }));
+  }
+
+  // Cancelar consulta
+  grid.append(menuBtn({ icon: "❌", label: "Cancelar", cls: "consult-menu-danger", onclick: async () => {
+    await _doCancelFlow(c, () => {});
+  }}));
+
+  panel.append(grid);
+  overlay.append(panel);
+  document.body.append(overlay);
+  // Foco no painel para acessibilidade
+  setTimeout(() => panel.querySelector("button")?.focus(), 50);
+}
+
 async function agendaPage() {
   await ensureMe();
   const params = new URLSearchParams(location.hash.split("?")[1] || "");
@@ -1388,77 +1471,39 @@ async function agendaPage() {
       const _waMsgRaw = `Olá, ${_nomeP}! 👋\n\nPassando para lembrar da sua consulta:\n\n📅 *${_data}* às *${_hora}*\n🏥 ${_clinica} — ${_medico}\n\nQualquer dúvida, estamos à disposição! 😊`;
       const _waMsg    = encodeURIComponent(_waMsgRaw);
       const _waNum    = telNum.startsWith("55") ? telNum : "55" + telNum;
-
-      // E-mail do paciente (se disponível via cache — pode ser null)
       const _emailPac = c.paciente_email || null;
-
-      // Botões ✔️ e 🚫 — visíveis só para agendada/confirmada em datas de hoje ou passadas
       const podeConclFalt = (c.status === "agendada" || c.status === "confirmada") && isTodayOrPast(c.inicio);
 
-      const acoes = h("div", { class: "consult-actions" }, [
-        podeConclFalt ? h("button", {
-          class: "consult-action-btn action-concluir",
-          title: "Marcar como Concluída",
-          "aria-label": "Marcar como concluída",
-          type: "button",
-          onclick: (e) => {
-            e.stopPropagation();
-            openConcluirModal(c, () => {
+      // Botão ⋯ que abre menu de ações
+      const btnMenu = h("button", {
+        class: "consult-menu-btn",
+        type: "button",
+        title: "Ações",
+        "aria-label": "Abrir menu de ações",
+        onclick: (e) => {
+          e.stopPropagation();
+          openConsultMenu({
+            consulta: c,
+            telNum, _waNum, _waMsg, _waMsgRaw, _emailPac, _clinica,
+            podeConclFalt,
+            onConcluir: () => {
               badge.className = `badge concluida badge-btn`;
               badge.textContent = "Concluída";
               card.className = `consult-card consult-card-concluida`;
               pulseCard(card);
-            });
-          },
-        }, ["✔️"]) : null,
-        podeConclFalt ? h("button", {
-          class: "consult-action-btn action-faltou",
-          title: "Marcar como Faltou",
-          "aria-label": "Marcar como faltou",
-          type: "button",
-          onclick: (e) => {
-            e.stopPropagation();
-            openFaltouModal(c, () => {
+            },
+            onFaltou: () => {
               badge.className = `badge faltou badge-btn`;
               badge.textContent = "Faltou";
               card.className = `consult-card consult-card-faltou`;
               pulseCard(card);
-            });
-          },
-        }, ["🚫"]) : null,
-        h("button", {
-          class: "consult-action-btn",
-          title: "Editar",
-          "aria-label": "Editar consulta",
-          type: "button",
-          onclick: (e) => { e.stopPropagation(); openEdit(c); },
-        }, ["✏️"]),
-        telNum ? h("a", {
-          class: "consult-action-btn",
-          title: "Ligar",
-          "aria-label": `Ligar para ${c.paciente_nome || "paciente"}`,
-          href: `tel:${telNum}`,
-          onclick: (e) => e.stopPropagation(),
-        }, ["📞"]) : null,
-        // WhatsApp com mensagem pré-formatada de lembrete
-        telNum ? h("a", {
-          class: "consult-action-btn consult-action-wa",
-          title: "Enviar lembrete via WhatsApp",
-          "aria-label": `WhatsApp para ${c.paciente_nome || "paciente"}`,
-          href: `https://wa.me/${_waNum}?text=${_waMsg}`,
-          target: "_blank",
-          rel: "noopener",
-          onclick: (e) => e.stopPropagation(),
-        }, ["🟢"]) : null,
-        // E-mail direto (mailto) — só aparece se paciente tiver e-mail
-        _emailPac ? h("a", {
-          class: "consult-action-btn consult-action-email",
-          title: `Enviar e-mail para ${_emailPac}`,
-          "aria-label": `Enviar e-mail para ${c.paciente_nome || "paciente"}`,
-          href: `mailto:${_emailPac}?subject=${encodeURIComponent(`Lembrete de consulta — ${_clinica}`)}&body=${encodeURIComponent(_waMsgRaw)}`,
-          onclick: (e) => e.stopPropagation(),
-        }, ["✉️"]) : null,
-      ]);
+            },
+            onEdit: () => openEdit(c),
+          });
+        },
+      }, ["⋯"]);
+
+      const acoes = h("div", { class: "consult-actions" }, [btnMenu]);
 
       const card = h("div", { class: `consult-card consult-card-${c.status}` }, [
         h("div", { class: "consult-card-left" }, [
@@ -2047,6 +2092,82 @@ async function pacientePage() {
   }
 }
 
+// ── Menu de ações do paciente (bottom-sheet) ─────────────────────────────────
+function openPacienteMenu({ p, waNum, waMsg, onEdit, onDelete }) {
+  const overlay = h("div", { class: "modal consult-menu-overlay" });
+  const panel   = h("div", { class: "consult-menu-panel" });
+
+  function close() { overlay.remove(); }
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+
+  // Cabeçalho
+  panel.append(
+    h("div", { class: "consult-menu-header" }, [
+      h("div", {}, [
+        h("div", { class: "consult-menu-title" }, [p.nome_completo]),
+        h("div", { class: "consult-menu-sub" }, [p.telefone || ""]),
+      ]),
+      h("button", { class: "consult-menu-close", type: "button", "aria-label": "Fechar", onclick: close }, ["✕"]),
+    ])
+  );
+
+  const grid = h("div", { class: "consult-menu-grid" });
+
+  function menuBtn({ icon, label, cls = "", onclick }) {
+    return h("button", { class: `consult-menu-item ${cls}`, type: "button",
+      onclick: () => { close(); onclick(); }
+    }, [
+      h("span", { class: "consult-menu-item-icon" }, [icon]),
+      h("span", { class: "consult-menu-item-label" }, [label]),
+    ]);
+  }
+  function menuLink({ icon, label, cls = "", href, target = "_self" }) {
+    return h("a", { class: `consult-menu-item ${cls}`, href, target,
+      rel: target === "_blank" ? "noopener" : null, onclick: close
+    }, [
+      h("span", { class: "consult-menu-item-icon" }, [icon]),
+      h("span", { class: "consult-menu-item-label" }, [label]),
+    ]);
+  }
+
+  // Ver histórico
+  grid.append(menuLink({ icon: "📋", label: "Histórico", href: `#/paciente?id=${encodeURIComponent(p.id)}` }));
+
+  // Editar
+  grid.append(menuBtn({ icon: "✏️", label: "Editar", onclick: onEdit }));
+
+  // Ligar
+  if (p.telefone) {
+    const tel = p.telefone.replace(/\D/g, "");
+    grid.append(menuLink({ icon: "📞", label: "Ligar", href: `tel:${tel}` }));
+  }
+
+  // WhatsApp
+  if (waNum) {
+    grid.append(menuLink({ icon: "💬", label: "WhatsApp", cls: "consult-menu-wa",
+      href: `https://wa.me/${waNum}?text=${waMsg}`, target: "_blank" }));
+  }
+
+  // E-mail
+  if (p.email) {
+    const clinica = state.me?.usuario?.nome_clinica || "nossa clínica";
+    grid.append(menuLink({ icon: "✉️", label: "E-mail", cls: "consult-menu-email",
+      href: `mailto:${p.email}?subject=${encodeURIComponent(`Contato — ${clinica}`)}&body=${encodeURIComponent(`Olá, ${p.nome_completo.split(" ")[0]}! 👋\n\nEntramos em contato da ${clinica}.\n\nEstamos à disposição! 😊`)}`,
+    }));
+  }
+
+  // PDF
+  grid.append(menuLink({ icon: "📄", label: "PDF", href: `/api/patients/${p.id}/history/pdf`, target: "_blank" }));
+
+  // Excluir
+  grid.append(menuBtn({ icon: "🗑️", label: "Excluir", cls: "consult-menu-danger", onclick: onDelete }));
+
+  panel.append(grid);
+  overlay.append(panel);
+  document.body.append(overlay);
+  setTimeout(() => panel.querySelector("button")?.focus(), 50);
+}
+
 async function pacientesPage() {
   await ensureMe();
   const q = h("input", { class: "input", placeholder: "Buscar por nome ou telefone..." });
@@ -2073,82 +2194,24 @@ async function pacientesPage() {
           `Olá, ${p.nome_completo.split(" ")[0]}! 👋\n\nEntramos em contato da ${CLINIC_NAME}.\n\nPrecisa de alguma informação ou deseja agendar uma consulta? Estamos à disposição! 😊`
         );
 
-        // ── Botões desktop (visíveis direto na linha) ──────────────────────
-        const btnDesktop = h("div", { class: "patient-actions-desktop" }, [
-          h("a", {
-            class: "btn pac-btn",
-            href: `#/paciente?id=${encodeURIComponent(p.id)}`,
-            title: "Ver histórico",
-            onclick: (e) => e.stopPropagation(),
-          }, ["📋"]),
-          h("button", {
-            class: "btn pac-btn",
-            title: "Editar dados",
-            onclick: (e) => { e.preventDefault(); e.stopPropagation(); openEdit(p); },
-          }, ["✏️"]),
-          h("a", {
-            class: "btn pac-btn pac-btn-wa",
-            href: `https://wa.me/${waNum}?text=${waMsg}`,
-            target: "_blank",
-            rel: "noopener",
-            title: "WhatsApp",
-            onclick: (e) => e.stopPropagation(),
-          }, ["💬"]),
-          h("button", {
-            class: "btn pac-btn pac-btn-danger",
-            title: "Excluir",
-            onclick: (e) => { e.preventDefault(); e.stopPropagation(); doDelete(p); },
-          }, ["🗑️"]),
-        ]);
-
-        // ── Menu mobile (•••) ──────────────────────────────────────────────
-        let mOpen = false;
-        const mDrop = h("div", { class: "dropdown-menu", style: "display:none" }, [
-          h("a", {
-            class: "dropdown-item",
-            href: `#/paciente?id=${encodeURIComponent(p.id)}`,
-          }, ["📋 Ver histórico"]),
-          h("button", {
-            class: "dropdown-item",
-            onclick: () => { mDrop.style.display = "none"; mOpen = false; openEdit(p); },
-          }, ["✏️ Editar dados"]),
-          h("a", {
-            class: "dropdown-item",
-            href: `https://wa.me/${waNum}?text=${waMsg}`,
-            target: "_blank",
-            rel: "noopener",
-          }, ["💬 WhatsApp"]),
-          h("button", {
-            class: "dropdown-item danger-item",
-            onclick: () => { mDrop.style.display = "none"; mOpen = false; doDelete(p); },
-          }, ["🗑️ Excluir"]),
-        ]);
-
-        const btnMobile = h("div", { class: "patient-actions-mobile dropdown-wrap" }, [
-          h("button", {
-            class: "btn patient-action-btn",
-            onclick: (e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              mOpen = !mOpen;
-              mDrop.style.display = mOpen ? "block" : "none";
-            },
-          }, ["•••"]),
-          mDrop,
-        ]);
-
-        document.addEventListener("click", () => {
-          if (mOpen) { mOpen = false; mDrop.style.display = "none"; }
-        });
+        // ── Botão ⋯ — abre menu de ações (mesmo estilo da agenda) ───────────
+        const btnAcoes = h("button", {
+          class: "consult-menu-btn",
+          type: "button",
+          title: "Ações",
+          "aria-label": `Ações para ${p.nome_completo}`,
+          onclick: (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            openPacienteMenu({ p, waNum, waMsg, onEdit: () => openEdit(p), onDelete: () => doDelete(p) });
+          },
+        }, ["⋯"]);
 
         return h("a", {
           class: "patient-row",
           href: `#/paciente?id=${encodeURIComponent(p.id)}`,
           onclick: (e) => {
-            if (e.target.closest(".patient-actions-desktop") ||
-                e.target.closest(".patient-actions-mobile")) {
-              e.preventDefault();
-            }
+            if (e.target.closest(".consult-menu-btn")) e.preventDefault();
           },
         }, [
           h("div", { class: "patient-avatar" }, [
@@ -2159,8 +2222,7 @@ async function pacientesPage() {
             h("div", { class: "patient-nome" }, [p.nome_completo]),
             h("div", { class: "patient-tel" }, [p.telefone]),
           ]),
-          btnDesktop,
-          btnMobile,
+          btnAcoes,
         ]);
       }));
       list.append(tbl);

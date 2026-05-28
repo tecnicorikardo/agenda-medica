@@ -3341,3 +3341,224 @@ body.light .consult-action-email:hover {
     font-size: 15px;
   }
 }
+
+/* =============================================
+   MENU DE AÇÕES DA CONSULTA — bottom-sheet
+   ============================================= */
+
+/* Botão ⋯ no card — único, limpo */
+.consult-menu-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1px solid rgba(110,168,255,.3);
+  background: rgba(110,168,255,.08);
+  color: var(--text);
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition), transform var(--transition);
+  -webkit-tap-highlight-color: transparent;
+  line-height: 1;
+  padding-bottom: 4px; /* alinha os pontinhos verticalmente */
+}
+.consult-menu-btn:hover {
+  background: rgba(110,168,255,.18);
+  border-color: rgba(110,168,255,.6);
+}
+.consult-menu-btn:active {
+  transform: scale(.92);
+}
+body.light .consult-menu-btn {
+  border-color: rgba(37,99,235,.25);
+  background: rgba(37,99,235,.06);
+}
+body.light .consult-menu-btn:hover {
+  background: rgba(37,99,235,.12);
+  border-color: rgba(37,99,235,.45);
+}
+
+/* Overlay */
+.consult-menu-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 55;
+  background: rgba(0,0,0,.55);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  animation: fadeIn .18s ease both;
+}
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Painel bottom-sheet */
+.consult-menu-panel {
+  width: 100%;
+  max-width: 520px;
+  background: var(--card);
+  border-radius: 22px 22px 0 0;
+  padding: 20px 20px 36px;
+  box-shadow: 0 -8px 40px rgba(0,0,0,.5);
+  border: 1px solid rgba(110,168,255,.12);
+  border-bottom: none;
+  animation: slideUpPanel .22s cubic-bezier(.22,1,.36,1) both;
+}
+@keyframes slideUpPanel {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+body.light .consult-menu-panel {
+  background: #ffffff;
+  border-color: rgba(200,210,230,.6);
+  box-shadow: 0 -8px 40px rgba(30,50,100,.15);
+}
+
+/* Cabeçalho */
+.consult-menu-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  gap: 8px;
+}
+.consult-menu-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text);
+  line-height: 1.2;
+}
+.consult-menu-sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 3px;
+}
+.consult-menu-close {
+  background: rgba(110,168,255,.1);
+  border: 1px solid rgba(110,168,255,.2);
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  cursor: pointer;
+  color: var(--muted);
+  flex-shrink: 0;
+  transition: background var(--transition);
+}
+.consult-menu-close:hover { background: rgba(110,168,255,.2); color: var(--text); }
+body.light .consult-menu-close { background: rgba(37,99,235,.07); border-color: rgba(37,99,235,.15); }
+
+/* Grade de botões — 3 por linha */
+.consult-menu-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+/* Cada item da grade */
+.consult-menu-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 16px 8px;
+  border-radius: 14px;
+  border: 1px solid rgba(32,50,85,.5);
+  background: rgba(15,27,51,.6);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background var(--transition), border-color var(--transition), transform var(--transition);
+  -webkit-tap-highlight-color: transparent;
+  text-align: center;
+}
+.consult-menu-item:hover {
+  background: rgba(110,168,255,.12);
+  border-color: rgba(110,168,255,.4);
+  transform: translateY(-2px);
+}
+.consult-menu-item:active { transform: scale(.95); }
+
+.consult-menu-item-icon {
+  font-size: 28px;
+  line-height: 1;
+  display: block;
+}
+.consult-menu-item-label {
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+/* Variantes coloridas */
+.consult-menu-ok {
+  border-color: rgba(67,209,127,.4);
+  background: rgba(67,209,127,.08);
+  color: #43d17f;
+}
+.consult-menu-ok:hover { background: rgba(67,209,127,.18); border-color: rgba(67,209,127,.7); }
+
+.consult-menu-warn {
+  border-color: rgba(255,204,102,.4);
+  background: rgba(255,204,102,.08);
+  color: var(--warn);
+}
+.consult-menu-warn:hover { background: rgba(255,204,102,.18); border-color: rgba(255,204,102,.7); }
+
+.consult-menu-wa {
+  border-color: rgba(37,211,102,.4);
+  background: rgba(37,211,102,.08);
+  color: #25d366;
+}
+.consult-menu-wa:hover { background: rgba(37,211,102,.18); border-color: rgba(37,211,102,.7); }
+
+.consult-menu-email {
+  border-color: rgba(110,168,255,.35);
+  background: rgba(110,168,255,.08);
+  color: var(--brand);
+}
+.consult-menu-email:hover { background: rgba(110,168,255,.18); border-color: rgba(110,168,255,.65); }
+
+.consult-menu-danger {
+  border-color: rgba(255,107,107,.4);
+  background: rgba(255,107,107,.08);
+  color: var(--danger);
+}
+.consult-menu-danger:hover { background: rgba(255,107,107,.18); border-color: rgba(255,107,107,.7); }
+
+/* Tema claro */
+body.light .consult-menu-item {
+  background: #f8faff;
+  border-color: rgba(200,210,230,.8);
+  color: var(--text);
+}
+body.light .consult-menu-item:hover { background: rgba(37,99,235,.06); border-color: rgba(37,99,235,.3); }
+body.light .consult-menu-ok    { background: rgba(22,163,74,.07);  border-color: rgba(22,163,74,.3);  color: #15803d; }
+body.light .consult-menu-warn  { background: rgba(217,119,6,.07);  border-color: rgba(217,119,6,.3);  color: #d97706; }
+body.light .consult-menu-wa    { background: rgba(22,163,74,.07);  border-color: rgba(22,163,74,.3);  color: #16a34a; }
+body.light .consult-menu-email { background: rgba(37,99,235,.07);  border-color: rgba(37,99,235,.25); color: var(--brand); }
+body.light .consult-menu-danger{ background: rgba(220,38,38,.07);  border-color: rgba(220,38,38,.3);  color: #dc2626; }
+
+/* Desktop — abre como modal centralizado */
+@media (min-width: 600px) {
+  .consult-menu-overlay { align-items: center; padding: 16px; }
+  .consult-menu-panel {
+    border-radius: 18px;
+    border: 1px solid rgba(110,168,255,.15);
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+}
