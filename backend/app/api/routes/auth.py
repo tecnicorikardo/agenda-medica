@@ -273,3 +273,35 @@ async def alterar_senha(
     db.add(user)
     db.commit()
     return {"ok": True}
+
+
+@router.post("/reset-direto")
+async def reset_direto(request: Request, db: Session = Depends(get_db)) -> dict:
+    """
+    Reset de senha direto por e-mail + nova senha (sem precisar de e-mail).
+    Protegido por RESET_SECRET definido nas variáveis de ambiente.
+    """
+    import os
+    from backend.app.core.security import hash_password
+
+    body = await request.json()
+    secret   = (body.get("secret")    or "").strip()
+    email    = (body.get("email")     or "").lower().strip()
+    nova     = (body.get("nova_senha") or "").strip()
+
+    env_secret = os.environ.get("RESET_SECRET", "")
+    if not env_secret or secret != env_secret:
+        raise HTTPException(status_code=403, detail="Não autorizado.")
+    if not email or not nova:
+        raise HTTPException(status_code=400, detail="email e nova_senha são obrigatórios.")
+    if len(nova) < 6:
+        raise HTTPException(status_code=400, detail="Senha deve ter pelo menos 6 caracteres.")
+
+    user = get_by_email(db, email)
+    if not user:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+
+    user.senha_hash = hash_password(nova)
+    db.add(user)
+    db.commit()
+    return {"ok": True, "email": email}

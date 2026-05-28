@@ -28,8 +28,14 @@ async def _send_via_resend(*, to: str, subject: str, html: str) -> bool:
     """Envia via Resend API (HTTPS — funciona em qualquer cloud)."""
     import aiohttp
     s = get_settings()
+
+    # Sem domínio verificado, o Resend exige remetente @resend.dev
+    # Se smtp_from_email não for de domínio verificado, usa o padrão do Resend
+    from_email = s.smtp_from_email or "onboarding@resend.dev"
+    from_name  = s.smtp_from_name  or "Agenda Médica"
+
     payload = {
-        "from": f"{s.smtp_from_name} <{s.smtp_from_email}>",
+        "from": f"{from_name} <{from_email}>",
         "to": [to],
         "subject": subject,
         "html": html,
