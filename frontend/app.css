@@ -3638,3 +3638,30 @@ body.light .consult-menu-btn {
 body.light .consult-menu-btn:hover {
   background: rgba(37,99,235,.1) !important;
 }
+
+/* ── Corrige card cortado — conteúdo não some ── */
+.consult-card {
+  overflow: visible !important; /* permite badge/menu saírem do card se necessário */
+}
+
+.consult-card-mid {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;       /* permite truncar o texto sem empurrar os outros */
+  overflow: hidden;
+}
+
+.consult-card-left {
+  flex-shrink: 0 !important;
+  min-width: 48px !important;
+}
+
+.consult-card-right {
+  flex-shrink: 0 !important;
+  min-width: 0 !important;
+  max-width: 140px;
+}
+
+/* Badge não quebra linha */
+.badge-btn {
+  white-space: nowrap !important;
+}
