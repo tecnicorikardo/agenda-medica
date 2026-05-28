@@ -1303,6 +1303,55 @@ async function dashboardPage() {
   }
 }
 
+// ── Menu de status via modal (usado pelo bottom-sheet de ações) ──────────────
+function openStatusMenuModal(c, onUpdate) {
+  const overlay = h("div", { class: "modal consult-menu-overlay" });
+  const panel   = h("div", { class: "consult-menu-panel" });
+
+  function close() { overlay.remove(); }
+  overlay.addEventListener("click", (e) => { if (e.target === overlay) close(); });
+
+  panel.append(
+    h("div", { class: "consult-menu-header" }, [
+      h("div", { class: "consult-menu-title" }, ["Alterar status"]),
+      h("button", { class: "consult-menu-close", type: "button", onclick: close }, ["✕"]),
+    ])
+  );
+
+  const STATUS_OPTS = [
+    { key: "confirmada", icon: "✅", label: "Confirmar",           cls: "consult-menu-ok" },
+    { key: "concluida",  icon: "✔️",  label: "Atendimento realizado", cls: "consult-menu-ok" },
+    { key: "agendada",   icon: "📅", label: "Agendado",            cls: "" },
+    { key: "faltou",     icon: "🚫", label: "Faltou",              cls: "consult-menu-warn" },
+    { key: "cancelada",  icon: "❌", label: "Cancelar",            cls: "consult-menu-danger" },
+  ];
+
+  const grid = h("div", { class: "consult-menu-grid" });
+  STATUS_OPTS.forEach(({ key, icon, label, cls }) => {
+    if (key === c.status) return; // não mostra o status atual
+    grid.append(h("button", {
+      class: `consult-menu-item ${cls}`,
+      type: "button",
+      onclick: async () => {
+        close();
+        try {
+          await api(`/appointments/${c.id}/status/${key}`, { method: "POST", body: "{}" });
+          c.status = key;
+          onUpdate();
+          toast(`Status atualizado: ${label}`);
+        } catch (err) { toast(err.message); }
+      },
+    }, [
+      h("span", { class: "consult-menu-item-icon" }, [icon]),
+      h("span", { class: "consult-menu-item-label" }, [label]),
+    ]));
+  });
+
+  panel.append(grid);
+  overlay.append(panel);
+  document.body.append(overlay);
+}
+
 // ── Menu de ações da consulta (bottom-sheet) ─────────────────────────────────
 function openConsultMenu({ consulta: c, telNum, _waNum, _waMsg, _waMsgRaw, _emailPac, _clinica, podeConclFalt, onConcluir, onFaltou, onEdit }) {
   const overlay = h("div", { class: "modal consult-menu-overlay" });
@@ -1342,12 +1391,17 @@ function openConsultMenu({ consulta: c, telNum, _waNum, _waMsg, _waMsgRaw, _emai
   // Editar
   grid.append(menuBtn({ icon: "✏️", label: "Editar", onclick: onEdit }));
 
-  // Alterar status
+  // Alterar status — abre submenu dentro do próprio bottom-sheet
   grid.append(menuBtn({ icon: "🔄", label: "Status", onclick: () => {
-    const badge = document.createElement("button"); // dummy para openStatusMenu
-    badge.className = `badge ${c.status} badge-btn`;
-    badge.textContent = c.status;
-    openStatusMenu(c, badge, () => {});
+    openStatusMenuModal(c, () => {
+      const badgeEl = document.querySelector(`[data-id="${c.id}"]`);
+      if (badgeEl) {
+        badgeEl.className = `badge ${c.status} badge-btn`;
+        badgeEl.textContent = { agendada:"Agendada", confirmada:"Confirmada", concluida:"Concluída", cancelada:"Cancelada", faltou:"Faltou" }[c.status] || c.status;
+        const cardEl = badgeEl.closest(".consult-card");
+        if (cardEl) { cardEl.className = `consult-card consult-card-${c.status}`; pulseCard(cardEl); }
+      }
+    });
   }}));
 
   // Concluir
@@ -1446,6 +1500,7 @@ async function agendaPage() {
         type: "button",
         title: "Alterar status",
         "aria-label": "Alterar status da consulta",
+        "data-id": c.id,
         onclick: (e) => {
           e.stopPropagation();
           openStatusMenu(c, badge, () => {
