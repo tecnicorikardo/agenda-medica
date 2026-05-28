@@ -1574,8 +1574,8 @@ async function agendaPage() {
           h("div", { class: "consult-tel" }, [tel]),
         ]),
         h("div", { class: "consult-card-right" }, [
-          badgeWrap,
-          acoes,
+          badge,
+          btnMenu,
         ]),
       ]);
 

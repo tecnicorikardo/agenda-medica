@@ -3603,3 +3603,38 @@ body.light .consult-menu-danger{ background: rgba(220,38,38,.07);  border-color:
   font-size: 12px !important;
   font-weight: 700 !important;
 }
+
+/* ── Card de consulta — coluna direita reorganizada ── */
+.consult-card-right {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  gap: 6px !important;
+  flex-shrink: 0;
+}
+
+/* Botão ⋯ — pequeno e discreto, ao lado do badge */
+.consult-menu-btn {
+  width: 32px  !important;
+  height: 32px !important;
+  font-size: 16px !important;
+  border-radius: 8px !important;
+  padding: 0 0 3px 0 !important;
+  flex-shrink: 0;
+  border: 1px solid rgba(110,168,255,.2) !important;
+  background: rgba(110,168,255,.06) !important;
+  color: var(--muted) !important;
+  letter-spacing: 1px;
+}
+.consult-menu-btn:hover {
+  background: rgba(110,168,255,.15) !important;
+  border-color: rgba(110,168,255,.5) !important;
+  color: var(--text) !important;
+}
+body.light .consult-menu-btn {
+  border-color: rgba(37,99,235,.2) !important;
+  background: rgba(37,99,235,.05) !important;
+}
+body.light .consult-menu-btn:hover {
+  background: rgba(37,99,235,.1) !important;
+}
