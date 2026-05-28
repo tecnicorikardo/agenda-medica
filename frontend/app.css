@@ -3295,3 +3295,49 @@ body.light .consult-action-email {
 body.light .consult-action-email:hover {
   background: rgba(37,99,235,.07) !important;
 }
+
+/* =============================================
+   CONSULT-ACTIONS — ajuste para 6 botões
+   ============================================= */
+
+/* Botões menores quando há muitos */
+.consult-actions {
+  gap: 3px;
+  flex-wrap: wrap;        /* quebra linha se necessário */
+  justify-content: flex-end;
+  max-width: 130px;       /* limita largura da coluna de ações */
+}
+
+.consult-action-btn {
+  width: 28px;
+  height: 28px;
+  font-size: 13px;
+  border-radius: 7px;
+}
+
+/* Mobile: botões ainda menores */
+@media (max-width: 480px) {
+  .consult-actions {
+    max-width: 110px;
+    gap: 2px;
+  }
+  .consult-action-btn {
+    width: 26px;
+    height: 26px;
+    font-size: 12px;
+  }
+}
+
+/* Desktop: pode ser um pouco maior */
+@media (min-width: 860px) {
+  .consult-actions {
+    max-width: none;
+    flex-wrap: nowrap;
+    gap: 4px;
+  }
+  .consult-action-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 15px;
+  }
+}
