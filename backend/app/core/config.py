@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     # Resend API (alternativa ao SMTP para produção em cloud)
     resend_api_key: str = Field(default="", alias="RESEND_API_KEY")
 
+    # Brevo Transactional API (alternativa ao SMTP — sem bloqueio de porta)
+    brevo_api_key: str = Field(default="", alias="BREVO_API_KEY")
+
 
 @lru_cache
 def get_settings() -> Settings:

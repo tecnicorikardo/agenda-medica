@@ -1,7 +1,9 @@
 """Serviço de envio de e-mail.
 
-Tenta primeiro via Resend API (recomendado em produção/cloud).
-Fallback para SMTP direto (funciona em desenvolvimento local).
+Prioridade:
+1. Resend API  (RESEND_API_KEY configurado)
+2. Brevo API   (BREVO_API_KEY configurado)
+3. SMTP direto (funciona em desenvolvimento local)
 """
 from __future__ import annotations
 
@@ -19,6 +21,11 @@ def _resend_configured() -> bool:
     return bool(getattr(s, "resend_api_key", None))
 
 
+def _brevo_configured() -> bool:
+    s = get_settings()
+    return bool(getattr(s, "brevo_api_key", None))
+
+
 def _smtp_configured() -> bool:
     s = get_settings()
     return bool(s.smtp_host and s.smtp_user and s.smtp_password and s.smtp_from_email)
@@ -29,8 +36,6 @@ async def _send_via_resend(*, to: str, subject: str, html: str) -> bool:
     import aiohttp
     s = get_settings()
 
-    # Sem domínio verificado, o Resend exige remetente @resend.dev
-    # Se smtp_from_email não for de domínio verificado, usa o padrão do Resend
     from_email = s.smtp_from_email or "onboarding@resend.dev"
     from_name  = s.smtp_from_name  or "Agenda Médica"
 
@@ -52,6 +57,39 @@ async def _send_via_resend(*, to: str, subject: str, html: str) -> bool:
             body = await resp.text()
             logger.error("Resend erro %s: %s", resp.status, body)
             raise Exception(f"Resend API error {resp.status}: {body}")
+
+
+async def _send_via_brevo(*, to: str, subject: str, html: str) -> bool:
+    """Envia via Brevo Transactional Email API (HTTPS — sem bloqueio de porta)."""
+    import aiohttp
+    s = get_settings()
+
+    from_email = s.smtp_from_email or "noreply@agenda-medica.app"
+    from_name  = s.smtp_from_name  or "Agenda Médica"
+
+    payload = {
+        "sender":      {"name": from_name, "email": from_email},
+        "to":          [{"email": to}],
+        "subject":     subject,
+        "htmlContent": html,
+    }
+    headers = {
+        "api-key":      s.brevo_api_key,
+        "Content-Type": "application/json",
+        "Accept":       "application/json",
+    }
+    async with aiohttp.ClientSession() as session:
+        async with session.post(
+            "https://api.brevo.com/v3/smtp/email",
+            json=payload,
+            headers=headers,
+        ) as resp:
+            if resp.status in (200, 201):
+                logger.info("E-mail enviado via Brevo para %s", to)
+                return True
+            body = await resp.text()
+            logger.error("Brevo erro %s: %s", resp.status, body)
+            raise Exception(f"Brevo API error {resp.status}: {body}")
 
 
 async def _send_via_smtp(*, to: str, subject: str, html: str) -> bool:
@@ -78,9 +116,12 @@ async def _send_via_smtp(*, to: str, subject: str, html: str) -> bool:
 
 
 async def send_email(*, to: str, subject: str, html: str) -> bool:
-    """Envia e-mail. Usa Resend se configurado, senão SMTP."""
+    """Envia e-mail. Tenta Resend → Brevo → SMTP."""
     if _resend_configured():
         return await _send_via_resend(to=to, subject=subject, html=html)
+
+    if _brevo_configured():
+        return await _send_via_brevo(to=to, subject=subject, html=html)
 
     if _smtp_configured():
         return await _send_via_smtp(to=to, subject=subject, html=html)
