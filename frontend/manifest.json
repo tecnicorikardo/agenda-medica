@@ -4,8 +4,8 @@
   "description": "Sistema de agendamento médico",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0b1220",
-  "theme_color": "#0b1220",
+  "background_color": "#FFFFFF",
+  "theme_color": "#0EA5E9",
   "orientation": "portrait-primary",
   "icons": [
     { "src": "/icons/icon-72.png",  "sizes": "72x72",   "type": "image/png", "purpose": "any maskable" },

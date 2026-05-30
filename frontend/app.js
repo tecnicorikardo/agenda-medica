@@ -6,9 +6,11 @@ const state = {
 const CLINIC_NAME = "Agenda Médica";
 
 // ── Tema claro/escuro ─────────────────────────────────────────────────────────
-function getTheme() { return localStorage.getItem("tema") || "dark"; }
+function getTheme() { return localStorage.getItem("tema") || "light"; }
 function applyTheme(t) {
   document.body.classList.toggle("light", t === "light");
+  document.querySelector('meta[name="theme-color"]')
+    ?.setAttribute("content", t === "light" ? "#0EA5E9" : "#0F172A");
   localStorage.setItem("tema", t);
 }
 applyTheme(getTheme()); // aplica imediatamente ao carregar
@@ -1161,7 +1163,7 @@ function loginPage() {
       },
     }, [
       h("div", { class: "login-logo-wrap" }, [
-        h("img", { src: "/assets/logo.png", class: "login-logo", alt: "Logo" }),
+        h("img", { src: "/icons/icon-192.png", class: "login-logo", alt: "Logo" }),
       ]),
       h("div", { class: "login-title" }, ["Agenda Médica"]),
       h("div", { class: "login-sub" }, [modoCadastro ? "Crie sua conta gratuitamente" : "Acesso seguro ao seu consultório"]),

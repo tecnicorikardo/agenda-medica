@@ -1,34 +1,40 @@
 :root{
-  --bg:#0b1220;
-  --card:#0f1b33;
-  --muted:#93a4c7;
-  --text:#eaf0ff;
-  --line:#203255;
-  --brand:#6ea8ff;
-  --brand2:#78f0d7;
-  --danger:#ff6b6b;
-  --warn:#ffcc66;
-  --ok:#43d17f;
-  --shadow:0 10px 30px rgba(0,0,0,.35);
-  --radius:14px;
-  --radius2:10px;
+  --bg:#0F172A;
+  --card:#1E293B;
+  --muted:#CBD5E1;
+  --text:#F8FAFC;
+  --line:#334155;
+  --brand:#38BDF8;
+  --brand2:#7DD3FC;
+  --danger:#EF4444;
+  --warn:#F59E0B;
+  --ok:#22C55E;
+  --info:#0EA5E9;
+  --title:#7DD3FC;
+  --surface:#1E293B;
+  --shadow:0 16px 36px rgba(2,6,23,.28);
+  --radius:8px;
+  --radius2:6px;
   --max:1100px;
   --font:ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Noto Sans";
 }
 
 /* ── Tema Claro ─────────────────────────────────────────────────────────────── */
 body.light {
-  --bg:#f0f2f7;
+  --bg:#FFFFFF;
   --card:#ffffff;
-  --muted:#7a8aaa;
-  --text:#1a2540;
-  --line:#dde3f0;
-  --brand:#2563eb;
-  --brand2:#0d9488;
-  --danger:#dc2626;
-  --warn:#d97706;
-  --ok:#16a34a;
-  --shadow:0 4px 20px rgba(30,50,100,.10);
+  --muted:#6B7280;
+  --text:#1F2937;
+  --line:#D1E5F0;
+  --brand:#0EA5E9;
+  --brand2:#0369A1;
+  --danger:#EF4444;
+  --warn:#F59E0B;
+  --ok:#22C55E;
+  --info:#0EA5E9;
+  --title:#0369A1;
+  --surface:#F0F9FF;
+  --shadow:0 10px 28px rgba(3,105,161,.08);
 }
 
 body.light {
@@ -3664,4 +3670,536 @@ body.light .consult-menu-btn:hover {
 /* Badge não quebra linha */
 .badge-btn {
   white-space: nowrap !important;
+}
+
+/* =============================================
+   TEMA CLINICO PROFISSIONAL
+   ============================================= */
+:root {
+  --status-confirmed:#22C55E;
+  --status-pending:#F59E0B;
+  --status-canceled:#EF4444;
+  --status-info:#0EA5E9;
+  --primary-contrast:#FFFFFF;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  letter-spacing: 0;
+}
+
+body.light {
+  --bg:#FFFFFF;
+  --card:#FFFFFF;
+  --muted:#6B7280;
+  --text:#1F2937;
+  --line:#D1E5F0;
+  --brand:#0EA5E9;
+  --brand2:#0369A1;
+  --title:#0369A1;
+  --surface:#F0F9FF;
+  background: var(--bg);
+}
+
+body:not(.light) {
+  --bg:#0F172A;
+  --card:#1E293B;
+  --muted:#CBD5E1;
+  --text:#F8FAFC;
+  --line:#334155;
+  --brand:#38BDF8;
+  --brand2:#7DD3FC;
+  --title:#7DD3FC;
+  --surface:#1E293B;
+  background: var(--bg);
+}
+
+.topbar {
+  background: color-mix(in srgb, var(--card) 92%, transparent);
+  border-bottom: 1px solid var(--line);
+  box-shadow: 0 1px 0 color-mix(in srgb, var(--line) 70%, transparent);
+}
+
+body.light .topbar {
+  background: rgba(255,255,255,.94);
+  border-bottom-color: var(--line);
+}
+
+.brand h1,
+.dash-saudacao,
+.modal-title,
+.next-nome,
+.patient-nome,
+.consult-nome,
+.import-hint-title,
+.theme-label {
+  color: var(--title);
+}
+
+.brand small,
+.dash-data,
+.sub,
+.muted,
+.label,
+.modal-label,
+.card-label-row,
+.quick-card-sub,
+.consult-time-end,
+.consult-tel,
+.patient-tel,
+.search-tel,
+.login-sub,
+.login-footer {
+  color: var(--muted);
+}
+
+.container {
+  padding-inline: 18px;
+}
+
+.card,
+.quick-card,
+.login-card,
+.modal .panel,
+.agenda-toolbar,
+.slots-bar,
+.patient-row,
+.consult-card,
+.tr,
+.search-result,
+.dropdown-menu,
+.topbar-dropdown,
+.status-quick-menu,
+.pwa-banner,
+.modal-patient-info,
+.lembrete-dias-row,
+.appt-times-field {
+  background: var(--card);
+  border-color: var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+body.light .card,
+body.light .quick-card,
+body.light .login-card,
+body.light .modal .panel,
+body.light .agenda-toolbar,
+body.light .slots-bar,
+body.light .patient-row,
+body.light .consult-card,
+body.light .tr,
+body.light .search-result,
+body.light .dropdown-menu,
+body.light .topbar-dropdown,
+body.light .status-quick-menu,
+body.light .pwa-banner,
+body.light .modal-patient-info,
+body.light .lembrete-dias-row,
+body.light .appt-times-field {
+  background: var(--card);
+  border-color: var(--line);
+}
+
+.card h2 {
+  color: var(--title);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+body.light .card h2 {
+  color: var(--title);
+}
+
+.kpi {
+  color: var(--text);
+  font-weight: 800;
+}
+
+.nav a {
+  background: color-mix(in srgb, var(--surface) 86%, var(--card));
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+body.light .nav a {
+  background: #FFFFFF;
+  border-color: var(--line);
+  color: var(--muted);
+}
+
+.btn,
+.topbar-profile-btn,
+.consult-action-btn,
+.cancel-chip,
+.pac-btn,
+.dp-trigger,
+.dp-month-cell,
+.dp-year-cell,
+.input,
+select,
+textarea {
+  background: color-mix(in srgb, var(--surface) 86%, var(--card));
+  border-color: var(--line);
+  color: var(--text);
+  border-radius: var(--radius2);
+  box-shadow: none;
+}
+
+body.light .btn,
+body.light .topbar-profile-btn,
+body.light .consult-action-btn,
+body.light .cancel-chip,
+body.light .pac-btn,
+body.light .dp-trigger,
+body.light .dp-month-cell,
+body.light .dp-year-cell,
+body.light .input,
+body.light select,
+body.light textarea {
+  background: #FFFFFF;
+  border-color: var(--line);
+  color: var(--text);
+}
+
+.btn:hover,
+.nav a:hover,
+.quick-card:hover,
+.patient-row:hover,
+.search-result:hover,
+.consult-action-btn:hover,
+.topbar-profile-btn:hover,
+.topbar-profile-btn.open,
+.dropdown-item:hover,
+.topbar-dropdown .dropdown-item:hover,
+.status-menu-item:hover,
+.dp-cell:hover:not(.dp-disabled):not(.dp-selected),
+.dp-nav:hover,
+.dp-header-btn:hover {
+  background: color-mix(in srgb, var(--brand) 10%, var(--card));
+  border-color: color-mix(in srgb, var(--brand) 44%, var(--line));
+}
+
+.btn.primary,
+.login-btn,
+.fab,
+.skip-link,
+.dp-cell.dp-selected,
+.dp-month-cell.dp-selected,
+.dp-year-cell.dp-selected {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #FFFFFF;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--brand) 24%, transparent);
+}
+
+body.light .btn.primary,
+body.light .login-btn,
+body.light .fab,
+body.light .skip-link,
+body.light .dp-cell.dp-selected,
+body.light .dp-month-cell.dp-selected,
+body.light .dp-year-cell.dp-selected {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #FFFFFF;
+  box-shadow: 0 8px 18px color-mix(in srgb, var(--brand) 24%, transparent);
+}
+
+body:not(.light) .btn.primary,
+body:not(.light) .login-btn,
+body:not(.light) .fab,
+body:not(.light) .skip-link,
+body:not(.light) .dp-cell.dp-selected,
+body:not(.light) .dp-month-cell.dp-selected,
+body:not(.light) .dp-year-cell.dp-selected {
+  color: #0F172A;
+}
+
+.btn.active,
+.btn.selected,
+.nav a.active,
+.topbar-dropdown .dropdown-item.active,
+.status-menu-primary {
+  background: color-mix(in srgb, var(--brand) 13%, var(--card));
+  border-color: color-mix(in srgb, var(--brand) 55%, var(--line));
+  color: var(--brand);
+}
+
+body.light .btn.active,
+body.light .btn.selected,
+body.light .nav a.active,
+body.light .topbar-dropdown .dropdown-item.active,
+body.light .status-menu-primary {
+  background: color-mix(in srgb, var(--brand) 13%, var(--card));
+  border-color: color-mix(in srgb, var(--brand) 55%, var(--line));
+  color: var(--brand);
+}
+
+.btn.danger,
+.danger-item,
+.topbar-dropdown .danger-item {
+  color: var(--danger);
+  border-color: color-mix(in srgb, var(--danger) 45%, var(--line));
+}
+
+.btn.whatsapp,
+.pac-btn-wa-main {
+  color: var(--status-confirmed) !important;
+  border-color: color-mix(in srgb, var(--status-confirmed) 45%, var(--line)) !important;
+  background: color-mix(in srgb, var(--status-confirmed) 10%, var(--card)) !important;
+}
+
+.login-bg,
+.welcome-bg {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--surface) 72%, var(--bg)) 0%, var(--bg) 58%),
+    var(--bg);
+}
+
+body.light .login-bg,
+body.light .welcome-bg {
+  background:
+    linear-gradient(180deg, #F0F9FF 0%, #FFFFFF 58%),
+    #FFFFFF;
+}
+
+.login-card {
+  max-width: 430px;
+  border-radius: 8px;
+  backdrop-filter: none;
+}
+
+.login-title,
+.welcome-nome {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--title);
+}
+
+body.light .login-title,
+body.light .welcome-nome {
+  background: none;
+  -webkit-text-fill-color: currentColor;
+  color: var(--title);
+}
+
+.login-logo,
+.brand img {
+  border-radius: 8px;
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--brand) 20%, transparent);
+}
+
+.avatar-iniciais,
+.avatar-iniciais-lg,
+.welcome-avatar-iniciais,
+.patient-avatar,
+.search-avatar {
+  background: var(--brand);
+  color: #FFFFFF;
+  border-color: color-mix(in srgb, var(--brand) 50%, var(--line));
+}
+
+body.light .avatar-iniciais,
+body.light .avatar-iniciais-lg,
+body.light .welcome-avatar-iniciais,
+body.light .patient-avatar,
+body.light .search-avatar {
+  background: var(--brand);
+  color: #FFFFFF;
+  border-color: color-mix(in srgb, var(--brand) 50%, var(--line));
+}
+
+body:not(.light) .avatar-iniciais,
+body:not(.light) .avatar-iniciais-lg,
+body:not(.light) .welcome-avatar-iniciais,
+body:not(.light) .patient-avatar,
+body:not(.light) .search-avatar {
+  color: #0F172A;
+}
+
+.agenda-toolbar,
+.slots-bar,
+.modal-patient-info,
+.lembrete-dias-row,
+.search-selected-tag,
+.import-col {
+  background: color-mix(in srgb, var(--brand) 7%, var(--card));
+  border-color: color-mix(in srgb, var(--brand) 20%, var(--line));
+}
+
+.consult-card {
+  border-left-width: 4px;
+  box-shadow: none;
+}
+
+.consult-card-agendada,
+body.light .consult-card-agendada {
+  border-left-color: var(--status-pending);
+}
+
+.consult-card-confirmada,
+.consult-card-concluida,
+body.light .consult-card-confirmada,
+body.light .consult-card-concluida {
+  border-left-color: var(--status-confirmed);
+}
+
+.consult-card-cancelada,
+body.light .consult-card-cancelada {
+  border-left-color: var(--status-canceled);
+}
+
+.consult-card-faltou,
+body.light .consult-card-faltou {
+  border-left-color: var(--status-pending);
+}
+
+.badge.agendada,
+body.light .badge.agendada {
+  background: color-mix(in srgb, var(--status-pending) 12%, var(--card));
+  border-color: color-mix(in srgb, var(--status-pending) 48%, var(--line));
+  color: var(--status-pending);
+}
+
+.badge.confirmada,
+.badge.concluida,
+body.light .badge.confirmada,
+body.light .badge.concluida {
+  background: color-mix(in srgb, var(--status-confirmed) 12%, var(--card));
+  border-color: color-mix(in srgb, var(--status-confirmed) 48%, var(--line));
+  color: var(--status-confirmed);
+}
+
+.badge.cancelada,
+body.light .badge.cancelada {
+  background: color-mix(in srgb, var(--status-canceled) 11%, var(--card));
+  border-color: color-mix(in srgb, var(--status-canceled) 48%, var(--line));
+  color: var(--status-canceled);
+}
+
+.badge.faltou,
+body.light .badge.faltou {
+  background: color-mix(in srgb, var(--status-pending) 12%, var(--card));
+  border-color: color-mix(in srgb, var(--status-pending) 48%, var(--line));
+  color: var(--status-pending);
+}
+
+.action-concluir,
+body.light .action-concluir {
+  border-color: color-mix(in srgb, var(--status-confirmed) 52%, var(--line)) !important;
+  color: var(--status-confirmed) !important;
+}
+
+.action-faltou,
+body.light .action-faltou,
+.warn-btn,
+body.light .warn-btn {
+  border-color: color-mix(in srgb, var(--status-pending) 52%, var(--line)) !important;
+  color: var(--status-pending) !important;
+}
+
+.warn-btn,
+body.light .warn-btn {
+  background: color-mix(in srgb, var(--status-pending) 14%, var(--card));
+}
+
+.status-menu-confirmada:hover,
+.status-menu-concluida:hover,
+.status-menu-concluida.status-menu-primary,
+.status-menu-concluida.status-menu-primary:hover {
+  background: color-mix(in srgb, var(--status-confirmed) 13%, var(--card)) !important;
+}
+
+.status-menu-cancelada,
+body.light .status-menu-cancelada {
+  color: var(--status-canceled);
+}
+
+.status-menu-cancelada:hover,
+.danger-item:hover,
+.topbar-dropdown .danger-item:hover {
+  background: color-mix(in srgb, var(--status-canceled) 10%, var(--card)) !important;
+}
+
+.status-menu-faltou:hover {
+  background: color-mix(in srgb, var(--status-pending) 13%, var(--card)) !important;
+}
+
+.toast-success .msg,
+.import-ok,
+.push-ok {
+  border-color: color-mix(in srgb, var(--status-confirmed) 42%, var(--line));
+  border-left-color: var(--status-confirmed) !important;
+  color: var(--status-confirmed);
+}
+
+.toast-danger .msg,
+.import-erro,
+.push-erro {
+  border-color: color-mix(in srgb, var(--status-canceled) 42%, var(--line));
+  border-left-color: var(--status-canceled) !important;
+  color: var(--status-canceled);
+}
+
+.toast-warn .msg,
+.push-warn {
+  border-color: color-mix(in srgb, var(--status-pending) 42%, var(--line));
+  border-left-color: var(--status-pending) !important;
+  color: var(--status-pending);
+}
+
+.toast-info .msg,
+.import-loading {
+  border-color: color-mix(in srgb, var(--status-info) 42%, var(--line));
+  border-left-color: var(--status-info) !important;
+  color: var(--brand);
+}
+
+.bottom-nav {
+  background: color-mix(in srgb, var(--card) 96%, transparent);
+  border-top-color: var(--line);
+  box-shadow: 0 -6px 20px rgba(15,23,42,.12);
+}
+
+body.light .bottom-nav {
+  background: rgba(255,255,255,.97);
+  border-top-color: var(--line);
+}
+
+.bottom-nav-item.active,
+.bottom-nav-back {
+  color: var(--brand) !important;
+}
+
+.bottom-nav-item.active::after {
+  background: var(--brand);
+}
+
+.theme-preview-dark {
+  background: #0F172A;
+  border-color: #334155;
+}
+
+.theme-preview-light {
+  background: #FFFFFF;
+  border-color: #D1E5F0;
+}
+
+.theme-preview-dark .tp-topbar,
+.theme-preview-dark .tp-card {
+  background: #1E293B;
+}
+
+.theme-preview-light .tp-topbar,
+.theme-preview-light .tp-card {
+  background: #F0F9FF;
+  border-color: #D1E5F0;
+}
+
+@keyframes cardPulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.018); box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 18%, transparent); }
+  100% { transform: scale(1); box-shadow: none; }
 }
