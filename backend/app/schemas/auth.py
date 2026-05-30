@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import uuid
+from datetime import datetime
 
 from pydantic import EmailStr, Field
 
@@ -27,6 +28,12 @@ class UsuarioOut(APIModel):
     lembrete_ativo: bool = True
     lembrete_msg_paciente: str | None = None
     lembrete_msg_medico: str | None = None
+    acesso_ate: datetime | None = None
+    acesso_status: str = "liberado"
+    acesso_bloqueado: bool = False
+    acesso_em_aviso: bool = False
+    dias_para_bloqueio: int | None = None
+    dias_restantes: int | None = None
 
 
 class UsuarioPerfilUpdate(APIModel):

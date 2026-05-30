@@ -11,6 +11,7 @@ from backend.app.core.config import get_settings
 from backend.app.core.security import create_access_token, verify_password
 from backend.app.crud.users import get_by_email
 from backend.app.db.session import get_db
+from backend.app.api.routes.billing import _billing_status
 from backend.app.schemas.auth import LoginIn, MeOut, UsuarioOut, UsuarioPerfilUpdate
 from backend.app.utils.deps import get_current_user
 
@@ -22,6 +23,7 @@ ALLOWED_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 
 
 def _user_to_out(user) -> UsuarioOut:
+    billing = _billing_status(user)
     return UsuarioOut(
         id=user.id,
         email=user.email,
@@ -36,6 +38,12 @@ def _user_to_out(user) -> UsuarioOut:
         lembrete_dias=user.lembrete_dias if user.lembrete_dias else [1],
         lembrete_msg_paciente=user.lembrete_msg_paciente,
         lembrete_msg_medico=user.lembrete_msg_medico,
+        acesso_ate=billing.acesso_ate,
+        acesso_status=billing.status,
+        acesso_bloqueado=billing.bloqueado,
+        acesso_em_aviso=billing.em_aviso,
+        dias_para_bloqueio=billing.dias_para_bloqueio,
+        dias_restantes=billing.dias_restantes,
     )
 
 

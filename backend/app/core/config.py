@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     app_name: str = Field(default="Agenda Médica", alias="APP_NAME")
     env: str = Field(default="development", alias="ENV")
     app_timezone: str = Field(default="America/Sao_Paulo", alias="APP_TIMEZONE")
+    public_base_url: str = Field(default="", alias="APP_PUBLIC_URL")
 
     database_url: str = Field(alias="DATABASE_URL")
 
@@ -49,6 +50,9 @@ class Settings(BaseSettings):
 
     # Brevo Transactional API (alternativa ao SMTP — sem bloqueio de porta)
     brevo_api_key: str = Field(default="", alias="BREVO_API_KEY")
+
+    # Mercado Pago / Checkout Pro
+    mercadopago_access_token: str = Field(default="", alias="MERCADOPAGO_ACCESS_TOKEN")
 
 
 @lru_cache

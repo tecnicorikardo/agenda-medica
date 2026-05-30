@@ -33,10 +33,13 @@ class Usuario(Base):
     lembrete_msg_paciente: Mapped[str | None] = mapped_column(Text, nullable=True)
     lembrete_msg_medico: Mapped[str | None] = mapped_column(Text, nullable=True)
 
+    # Acesso comercial
+    acesso_ate: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    assinatura_status: Mapped[str] = mapped_column(String(30), nullable=False, server_default="liberado")
+
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         server_default=func.now(),
         onupdate=func.now(),
     )
-

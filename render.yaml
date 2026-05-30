@@ -14,8 +14,13 @@ services:
         value: "true"
       - key: APP_TIMEZONE
         value: "America/Sao_Paulo"
+      - key: APP_PUBLIC_URL
+        value: "https://agenda-medica-2c9b.onrender.com"
       - key: APP_NAME
         value: "Agenda Médica"
+      # Mercado Pago (preencha manualmente no dashboard do Render)
+      # - key: MERCADOPAGO_ACCESS_TOKEN
+      #   value: APP_USR-...
       # E-mail (preencha manualmente no dashboard do Render)
       # - key: SMTP_HOST
       #   value: smtp.gmail.com

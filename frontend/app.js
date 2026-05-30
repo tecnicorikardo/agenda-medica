@@ -405,6 +405,28 @@ function formatDate(d) {
   return `${yyyy}-${mm}-${dd}`;
 }
 
+function formatBRLFromCents(cents) {
+  return (Number(cents || 0) / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+}
+
+function billingInfo() {
+  return state.me?.usuario || {};
+}
+
+function isBillingBlocked() {
+  return Boolean(billingInfo().acesso_bloqueado);
+}
+
+function billingWarningText() {
+  const u = billingInfo();
+  if (u.acesso_bloqueado) return "Seu acesso estÃ¡ bloqueado. Regularize o pagamento para voltar a usar agenda, pacientes e dashboard.";
+  if (u.acesso_em_aviso) {
+    const dias = Number(u.dias_para_bloqueio ?? 0);
+    return `Pagamento vencido. VocÃª ainda pode usar o sistema por ${dias} dia${dias === 1 ? "" : "s"}.`;
+  }
+  return "";
+}
+
 // Retorna true se a data da consulta é hoje ou no passado
 function isTodayOrPast(isoDate) {
   const hoje = formatDate(new Date());
@@ -812,6 +834,14 @@ function topbar(active) {
   });
   itemPerfil.innerHTML = `${svgSettings} <span>Meu Perfil</span>`;
 
+  const itemPagamento = h("a", {
+    class: `dropdown-item${active === "pagamento" ? " active" : ""}`,
+    href: "#/pagamento",
+    role: "menuitem",
+    onclick: () => { dropMenu.style.display = "none"; },
+  });
+  itemPagamento.innerHTML = `<span aria-hidden="true">PIX</span> <span>Pagamento</span>`;
+
   // Item: Sair
   const itemSair = h("button", {
     class: "dropdown-item danger-item",
@@ -827,7 +857,7 @@ function topbar(active) {
   });
   itemSair.innerHTML = `${svgLogout} <span>Sair</span>`;
 
-  dropMenu.append(itemPerfil, itemSair);
+  dropMenu.append(itemPerfil, itemPagamento, itemSair);
 
   // Botão trigger — usa o avatar do usuário
   const triggerAvatar = u.avatar_url
@@ -890,6 +920,7 @@ function renderFAB(active) {
     { key: "dashboard", icon: "📊", label: "Dashboard", href: "#/dashboard" },
     { key: "agenda",    icon: "📅", label: "Agenda",    href: "#/agenda" },
     { key: "pacientes", icon: "👥", label: "Pacientes", href: "#/pacientes" },
+    { key: "pagamento", icon: "PIX", label: "Pagar", href: "#/pagamento" },
     { key: "perfil",    icon: "⚙️",  label: "Perfil",   href: "#/perfil" },
   ];
 
@@ -914,6 +945,7 @@ function buildSidebar(active) {
     { key: "dashboard", icon: "📊", label: "Dashboard",  href: "#/dashboard" },
     { key: "agenda",    icon: "📅", label: "Agenda",     href: "#/agenda" },
     { key: "pacientes", icon: "👥", label: "Pacientes",  href: "#/pacientes" },
+    { key: "pagamento", icon: "PIX", label: "Pagamento", href: "#/pagamento" },
     { key: "perfil",    icon: "⚙️",  label: "Perfil",    href: "#/perfil" },
   ];
 
@@ -940,11 +972,19 @@ function pageShell(active, content) {
   const tb = topbar(active);
   if (tb) app.append(tb);
 
+  const warning = billingWarningText();
+  const billingBanner = warning
+    ? h("div", { class: "billing-banner" + (isBillingBlocked() ? " billing-banner-blocked" : "") }, [
+        h("span", {}, [warning]),
+        h("a", { class: "btn primary billing-banner-btn", href: "#/pagamento" }, ["Regularizar"]),
+      ])
+    : null;
+
   // Sidebar (desktop ≥ 860px) + conteúdo principal
   const mainWrap = h("div", { class: "layout-wrap" }, [
     buildSidebar(active),
     h("div", { class: "layout-main" }, [
-      h("div", { class: "container page-content" }, content),
+      h("div", { class: "container page-content" }, billingBanner ? [billingBanner, ...content] : content),
     ]),
   ]);
   app.append(mainWrap);
@@ -2948,6 +2988,125 @@ async function perfilPage() {
   await atualizarStatusPush();
 }
 
+async function pagamentoPage() {
+  await ensureMe();
+  pageShell("pagamento", [h("div", { class: "card" }, ["Carregando..."])]);
+
+  let selectedMonths = 12;
+  let status = null;
+
+  try {
+    status = await api("/billing/status");
+  } catch (err) {
+    pageShell("pagamento", [h("div", { class: "card" }, [`Erro: ${err.message}`])]);
+    return;
+  }
+
+  const u = state.me?.usuario || {};
+  const accessText = status.acesso_ate
+    ? new Date(status.acesso_ate).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })
+    : "Acesso liberado";
+
+  const selectedValue = h("div", { class: "billing-selected-value" }, [""]);
+  const checkoutBtn = h("button", { class: "btn primary billing-checkout-btn", type: "button" }, ["Pagar com Pix"]);
+
+  function currentPlan() {
+    return (status.planos || []).find(p => p.meses === selectedMonths) || status.planos?.[0];
+  }
+
+  function updateSelected() {
+    const plan = currentPlan();
+    selectedValue.textContent = plan
+      ? `${plan.meses} ${plan.meses === 1 ? "mÃªs" : "meses"} - ${plan.valor_formatado || formatBRLFromCents(plan.valor_centavos)}`
+      : "";
+    checkoutBtn.textContent = plan ? `Pagar ${plan.valor_formatado || formatBRLFromCents(plan.valor_centavos)} com Pix` : "Pagar com Pix";
+  }
+
+  const planCards = h("div", { class: "billing-plan-grid" }, (status.planos || []).map((plan) => {
+    const btn = h("button", {
+      class: "billing-plan" + (plan.meses === selectedMonths ? " billing-plan-active" : "") + (plan.destaque ? " billing-plan-featured" : ""),
+      type: "button",
+      onclick: () => {
+        selectedMonths = plan.meses;
+        planCards.querySelectorAll(".billing-plan").forEach(el => el.classList.remove("billing-plan-active"));
+        btn.classList.add("billing-plan-active");
+        updateSelected();
+      },
+    }, [
+      plan.destaque ? h("span", { class: "billing-plan-tag" }, ["Melhor valor"]) : null,
+      h("strong", {}, [`${plan.meses} ${plan.meses === 1 ? "mÃªs" : "meses"}`]),
+      h("span", {}, [plan.valor_formatado || formatBRLFromCents(plan.valor_centavos)]),
+    ]);
+    return btn;
+  }));
+
+  checkoutBtn.onclick = async () => {
+    checkoutBtn.disabled = true;
+    checkoutBtn.textContent = "Gerando pagamento...";
+    try {
+      const res = await api("/billing/checkout", {
+        method: "POST",
+        body: JSON.stringify({ meses: selectedMonths }),
+      });
+      location.href = res.checkout_url;
+    } catch (err) {
+      toast(err.message);
+      checkoutBtn.disabled = false;
+      updateSelected();
+    }
+  };
+
+  updateSelected();
+
+  const urlStatus = new URLSearchParams(location.hash.split("?")[1] || "").get("status");
+  const returnMessage = urlStatus
+    ? h("div", { class: "billing-return-msg" }, [
+        urlStatus === "success"
+          ? "Pagamento iniciado. A liberaÃ§Ã£o acontece automaticamente assim que o Mercado Pago confirmar."
+          : urlStatus === "pending"
+            ? "Pix pendente. Assim que o pagamento for aprovado, seus meses serÃ£o liberados."
+            : "Pagamento nÃ£o concluÃ­do. VocÃª pode tentar novamente.",
+      ])
+    : null;
+
+  pageShell("pagamento", [
+    h("div", { class: "dash-header" }, [
+      h("div", {}, [
+        h("div", { class: "dash-saudacao" }, ["Pagamento"]),
+        h("div", { class: "dash-data" }, ["Escolha o perÃ­odo e pague pelo Checkout Pro do Mercado Pago."]),
+      ]),
+    ]),
+    returnMessage,
+    h("div", { class: "grid cards" }, [
+      h("div", { class: "card col-4 billing-status-card" }, [
+        h("h2", {}, ["Acesso atual"]),
+        h("div", { class: "kpi" }, [status.bloqueado ? "Bloqueado" : status.em_aviso ? "Aviso" : "Ativo"]),
+        h("div", { class: "sub" }, [status.acesso_ate ? `VÃ¡lido atÃ© ${accessText}` : accessText]),
+        status.em_aviso ? h("div", { class: "billing-status-note" }, [`Bloqueio em ${status.dias_para_bloqueio} dia${status.dias_para_bloqueio === 1 ? "" : "s"}.`]) : null,
+      ]),
+      h("div", { class: "card col-8" }, [
+        h("h2", {}, ["Plano por Pix"]),
+        h("div", { class: "sub", style: "margin-bottom:14px" }, [
+          "O pagamento Ã© avulso. Se vocÃª jÃ¡ tiver acesso ativo, o novo perÃ­odo serÃ¡ somado ao vencimento atual.",
+        ]),
+        planCards,
+        h("div", { class: "billing-checkout-row" }, [
+          selectedValue,
+          checkoutBtn,
+        ]),
+      ]),
+      h("div", { class: "card col-12" }, [
+        h("h2", {}, ["Como funciona"]),
+        h("div", { class: "billing-steps" }, [
+          h("span", {}, ["1. Escolha quantos meses quer pagar."]),
+          h("span", {}, ["2. Pague com Pix no Checkout Pro."]),
+          h("span", {}, ["3. O acesso Ã© atualizado automaticamente pelo webhook."]),
+        ]),
+      ]),
+    ]),
+  ]);
+}
+
 async function router() {
   // Não interrompe a tela de boas-vindas se ela estiver ativa
   if (document.querySelector(".welcome-screen:not(.welcome-out)")) return;
@@ -2968,10 +3127,16 @@ async function router() {
     return loginPage();
   }
 
+  if (isBillingBlocked() && !["pagamento", "perfil"].includes(page)) {
+    location.hash = "#/pagamento";
+    return;
+  }
+
   if (page === "dashboard") return dashboardPage();
   if (page === "agenda") return agendaPage();
   if (page === "pacientes") return pacientesPage();
   if (page === "paciente") return pacientePage();
+  if (page === "pagamento") return pagamentoPage();
   if (page === "perfil") return perfilPage();
   return dashboardPage();
 }
