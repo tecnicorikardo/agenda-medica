@@ -834,14 +834,6 @@ function topbar(active) {
   });
   itemPerfil.innerHTML = `${svgSettings} <span>Meu Perfil</span>`;
 
-  const itemPagamento = h("a", {
-    class: `dropdown-item${active === "pagamento" ? " active" : ""}`,
-    href: "#/pagamento",
-    role: "menuitem",
-    onclick: () => { dropMenu.style.display = "none"; },
-  });
-  itemPagamento.innerHTML = `<span aria-hidden="true">PIX</span> <span>Pagamento</span>`;
-
   // Item: Sair
   const itemSair = h("button", {
     class: "dropdown-item danger-item",
@@ -857,7 +849,7 @@ function topbar(active) {
   });
   itemSair.innerHTML = `${svgLogout} <span>Sair</span>`;
 
-  dropMenu.append(itemPerfil, itemPagamento, itemSair);
+  dropMenu.append(itemPerfil, itemSair);
 
   // Botão trigger — usa o avatar do usuário
   const triggerAvatar = u.avatar_url
@@ -920,7 +912,6 @@ function renderFAB(active) {
     { key: "dashboard", icon: "📊", label: "Dashboard", href: "#/dashboard" },
     { key: "agenda",    icon: "📅", label: "Agenda",    href: "#/agenda" },
     { key: "pacientes", icon: "👥", label: "Pacientes", href: "#/pacientes" },
-    { key: "pagamento", icon: "PIX", label: "Pagar", href: "#/pagamento" },
     { key: "perfil",    icon: "⚙️",  label: "Perfil",   href: "#/perfil" },
   ];
 
@@ -945,7 +936,6 @@ function buildSidebar(active) {
     { key: "dashboard", icon: "📊", label: "Dashboard",  href: "#/dashboard" },
     { key: "agenda",    icon: "📅", label: "Agenda",     href: "#/agenda" },
     { key: "pacientes", icon: "👥", label: "Pacientes",  href: "#/pacientes" },
-    { key: "pagamento", icon: "PIX", label: "Pagamento", href: "#/pagamento" },
     { key: "perfil",    icon: "⚙️",  label: "Perfil",    href: "#/perfil" },
   ];
 
@@ -2930,8 +2920,8 @@ async function perfilPage() {
         h("h2", { style: "margin:0" }, ["🔔 Notificações push"]),
       ]),
       h("div", { class: "sub", style: "margin-bottom:14px" }, [
-        "Receba alertas no celular ou computador mesmo com o app fechado. ",
-        "Ative em cada dispositivo que quiser receber notificações.",
+        "Recomendado para quem instala o PWA: receba alertas no celular ou computador mesmo com o app fechado. ",
+        "Ative em cada dispositivo para não perder lembretes da agenda.",
       ]),
       pushStatus,
       h("div", { class: "row", style: "margin-top:12px; gap:8px" }, [btnAtivarPush, btnTestarPush]),
@@ -2983,6 +2973,26 @@ async function perfilPage() {
       h("div", { class: "row", style: "margin-top:12px" }, [btnTestarEmail]),
     ]);
     cardsGrid.append(emailCard);
+
+    const acessoAte = u.acesso_ate
+      ? new Date(u.acesso_ate).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })
+      : "Acesso liberado";
+    const pagamentoCard = h("div", { class: "card col-12 profile-payment-card" }, [
+      h("div", { class: "row", style: "margin-bottom:12px; align-items:center" }, [
+        h("h2", { style: "margin:0" }, ["Plano e pagamento"]),
+        h("div", { class: "spacer" }),
+        h("span", { class: "badge " + (u.acesso_bloqueado ? "cancelada" : u.acesso_em_aviso ? "faltou" : "confirmada") }, [
+          u.acesso_bloqueado ? "Bloqueado" : u.acesso_em_aviso ? "Aviso" : "Ativo",
+        ]),
+      ]),
+      h("div", { class: "sub", style: "margin-bottom:14px" }, [
+        u.acesso_ate ? `Seu acesso estÃ¡ vÃ¡lido atÃ© ${acessoAte}.` : "Gerencie a validade do acesso e pagamentos por Pix.",
+      ]),
+      h("div", { class: "row", style: "gap:8px" }, [
+        h("a", { class: "btn primary", href: "#/pagamento" }, ["Abrir pagamento Pix"]),
+      ]),
+    ]);
+    cardsGrid.append(pagamentoCard);
   }
 
   await atualizarStatusPush();
@@ -3225,6 +3235,33 @@ async function requestPushPermission() {
 }
 
 // Inicia PWA após carregar
+function showPushActivationPrompt() {
+  if (!("Notification" in window) || Notification.permission !== "default") return;
+  if (document.querySelector(".push-install-prompt")) return;
+
+  const prompt = h("div", { class: "push-install-prompt", role: "status" }, [
+    h("div", { class: "push-install-copy" }, [
+      h("strong", {}, ["Ative os lembretes no dispositivo"]),
+      h("span", {}, ["Depois de instalar o app, permita notificações para receber alertas da agenda mesmo com o PWA fechado."]),
+    ]),
+    h("button", {
+      class: "btn primary push-install-action",
+      type: "button",
+      onclick: async () => {
+        await requestPushPermission();
+        prompt.remove();
+      },
+    }, ["Ativar notificações"]),
+    h("button", {
+      class: "pwa-banner-close",
+      type: "button",
+      "aria-label": "Fechar aviso",
+      onclick: () => prompt.remove(),
+    }, ["✕"]),
+  ]);
+  document.body.prepend(prompt);
+}
+
 initPWA();
 
 // ── Banner "Adicionar à tela inicial" ─────────────────────────────────────────
@@ -3248,7 +3285,7 @@ window.addEventListener("beforeinstallprompt", (e) => {
       <img src="/icons/icon-96.png" class="pwa-banner-icon" alt="">
       <div class="pwa-banner-text">
         <strong>Instalar Agenda Médica</strong>
-        <span>Acesso rápido na tela inicial, funciona offline.</span>
+        <span>Acesso rápido e alertas de consulta quando ativar as notificações.</span>
       </div>
       <button class="btn primary pwa-banner-install" id="pwa-install-btn">Instalar</button>
       <button class="pwa-banner-close" id="pwa-dismiss-btn" aria-label="Fechar">✕</button>
@@ -3259,7 +3296,10 @@ window.addEventListener("beforeinstallprompt", (e) => {
       _deferredInstall.prompt();
       const { outcome } = await _deferredInstall.userChoice;
       banner.remove();
-      if (outcome === "accepted") toast("✅ App instalado!");
+      if (outcome === "accepted") {
+        toast("✅ App instalado!");
+        showPushActivationPrompt();
+      }
       _deferredInstall = null;
     };
     document.getElementById("pwa-dismiss-btn").onclick = () => {
@@ -3272,6 +3312,7 @@ window.addEventListener("beforeinstallprompt", (e) => {
 
 window.addEventListener("appinstalled", () => {
   toast("✅ Agenda Médica instalada com sucesso!");
+  setTimeout(showPushActivationPrompt, 800);
   _deferredInstall = null;
 });
 

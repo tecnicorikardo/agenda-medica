@@ -1,5 +1,5 @@
 /* Service Worker — Agenda Médica */
-const CACHE = "agenda-v4";
+const CACHE = "agenda-v5";
 const PRECACHE = ["/", "/app.js", "/app.css", "/manifest.json", "/icons/icon-192.png"];
 
 // ── Install: pré-cache dos assets principais ──────────────────────────────────

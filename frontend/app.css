@@ -4338,3 +4338,54 @@ body.light .billing-plan {
   color: var(--muted);
   font-size: 14px;
 }
+
+.profile-payment-card {
+  border-style: dashed;
+}
+
+.push-install-prompt {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  z-index: 70;
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--radius);
+  border: 1px solid color-mix(in srgb, var(--brand) 40%, var(--line));
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+
+.push-install-copy {
+  display: grid;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.push-install-copy strong {
+  color: var(--title);
+  font-size: 14px;
+}
+
+.push-install-copy span {
+  color: var(--muted);
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.push-install-action {
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .push-install-prompt {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}
