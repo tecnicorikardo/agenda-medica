@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from html import escape
 from zoneinfo import ZoneInfo
 
 TZ = ZoneInfo("America/Sao_Paulo")
@@ -122,6 +123,64 @@ def _render_msg(template: str | None, default: str, **kwargs) -> str:
 
 
 # ─── E-mail para o PACIENTE ───────────────────────────────────────────────────
+
+def confirmacao_agendamento_paciente_html(
+    *,
+    paciente_nome: str,
+    inicio: datetime,
+    fim: datetime,
+    clinic_name: str,
+    doctor_name: str | None,
+    observacoes_consulta: str | None = None,
+) -> tuple[str, str]:
+    """Retorna (subject, html) da confirmação imediata de agendamento."""
+    primeiro_nome = paciente_nome.split()[0] if paciente_nome.split() else paciente_nome
+    data_str = _fmt_date_br(inicio)
+    hora_str = _fmt_hora(inicio)
+    hora_fim = _fmt_hora(fim)
+    subject = f"Consulta marcada para {data_str} às {hora_str} - {clinic_name}"
+    doctor_line = f"Dr(a). {doctor_name}" if doctor_name else clinic_name
+
+    obs_row = ""
+    if observacoes_consulta:
+        obs_row = f"""
+        <div class="card-row">
+          <span class="card-label">Observações</span>
+          <span class="card-value obs">{escape(observacoes_consulta)}</span>
+        </div>"""
+
+    content = f"""
+    <p class="greeting">Olá, {escape(primeiro_nome)}!</p>
+    <p class="intro">Sua consulta foi marcada com sucesso. Confira abaixo a data e o horário do atendimento.</p>
+    <div class="card">
+      <div class="card-row">
+        <span class="card-label">Paciente</span>
+        <span class="card-value">{escape(paciente_nome)}</span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">Data</span>
+        <span class="card-value">{data_str}</span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">Horário</span>
+        <span class="card-value">{hora_str} – {hora_fim}</span>
+      </div>
+      <div class="card-row">
+        <span class="card-label">Local</span>
+        <span class="card-value">{escape(clinic_name)}</span>
+      </div>{obs_row}
+    </div>
+    <p class="intro">Caso não possa comparecer, avise o consultório com antecedência para remarcarmos seu horário.</p>
+    """
+
+    html = _BASE.format(
+        subject=escape(subject),
+        clinic_name=escape(clinic_name),
+        doctor_line=escape(doctor_line),
+        content=content,
+    )
+    return subject, html
+
 
 def lembrete_paciente_html(
     *,

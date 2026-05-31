@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import logging
 from datetime import date, datetime, timezone
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from backend.app.crud.patients import get_patient
@@ -21,6 +22,37 @@ from backend.app.schemas.appointment import ConsultaCreate, ConsultaUpdate, Cons
 from backend.app.utils.deps import get_current_user
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
+
+
+async def _enviar_confirmacao_agendamento(
+    *,
+    email_dest: str,
+    paciente_nome: str,
+    inicio: datetime,
+    fim: datetime,
+    clinic_name: str,
+    doctor_name: str | None,
+    observacoes_consulta: str | None,
+) -> None:
+    from backend.app.services.email import send_email
+    from backend.app.services.email_templates import confirmacao_agendamento_paciente_html
+
+    subject, html = confirmacao_agendamento_paciente_html(
+        paciente_nome=paciente_nome,
+        inicio=inicio,
+        fim=fim,
+        clinic_name=clinic_name,
+        doctor_name=doctor_name,
+        observacoes_consulta=observacoes_consulta,
+    )
+
+    try:
+        ok = await send_email(to=email_dest, subject=subject, html=html)
+        if not ok:
+            logger.warning("Confirmação de agendamento não enviada para %s: e-mail não configurado", email_dest)
+    except Exception as exc:
+        logger.exception("Erro ao enviar confirmação de agendamento para %s: %s", email_dest, exc)
 
 
 def _as_with_paciente(consulta) -> dict:
@@ -81,6 +113,7 @@ def upcoming(
 @router.post("", response_model=ConsultaWithPaciente, status_code=status.HTTP_201_CREATED)
 def create_(
     data: ConsultaCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
 ) -> ConsultaWithPaciente:
@@ -89,6 +122,17 @@ def create_(
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
     try:
         consulta = create(db, usuario_id=user.id, data=data)
+        if patient.email:
+            background_tasks.add_task(
+                _enviar_confirmacao_agendamento,
+                email_dest=patient.email,
+                paciente_nome=patient.nome_completo,
+                inicio=consulta.inicio,
+                fim=consulta.fim,
+                clinic_name=user.nome_clinica or "Agenda Médica",
+                doctor_name=user.nome,
+                observacoes_consulta=consulta.observacoes,
+            )
         return _as_with_paciente(consulta)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
