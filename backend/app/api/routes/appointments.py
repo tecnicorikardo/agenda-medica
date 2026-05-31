@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import date, datetime, timezone
+from uuid import UUID
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from sqlalchemy.orm import Session
@@ -27,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 async def _enviar_confirmacao_agendamento(
     *,
+    consulta_id: UUID,
     email_dest: str,
     paciente_nome: str,
     inicio: datetime,
@@ -35,6 +37,8 @@ async def _enviar_confirmacao_agendamento(
     doctor_name: str | None,
     observacoes_consulta: str | None,
 ) -> None:
+    from backend.app.db.session import SessionLocal
+    from backend.app.models.reminder import Lembrete
     from backend.app.services.email import send_email
     from backend.app.services.email_templates import confirmacao_agendamento_paciente_html
 
@@ -47,12 +51,36 @@ async def _enviar_confirmacao_agendamento(
         observacoes_consulta=observacoes_consulta,
     )
 
+    db = SessionLocal()
+    lembrete = Lembrete(
+        consulta_id=consulta_id,
+        canal="email_confirmacao",
+        agendado_para=datetime.now(timezone.utc),
+        status="pendente",
+        payload={"email": email_dest, "subject": subject, "tipo": "consulta_marcada"},
+    )
     try:
+        db.add(lembrete)
+        db.commit()
+
         ok = await send_email(to=email_dest, subject=subject, html=html)
-        if not ok:
+        lembrete.status = "enviado" if ok else "erro"
+        if ok:
+            lembrete.enviado_em = datetime.now(timezone.utc)
+        else:
+            lembrete.payload = {**(lembrete.payload or {}), "erro": "Servico de e-mail nao configurado"}
             logger.warning("Confirmação de agendamento não enviada para %s: e-mail não configurado", email_dest)
+        db.add(lembrete)
+        db.commit()
     except Exception as exc:
+        db.rollback()
+        lembrete.status = "erro"
+        lembrete.payload = {**(lembrete.payload or {}), "erro": str(exc)}
+        db.add(lembrete)
+        db.commit()
         logger.exception("Erro ao enviar confirmação de agendamento para %s: %s", email_dest, exc)
+    finally:
+        db.close()
 
 
 def _as_with_paciente(consulta) -> dict:
@@ -125,6 +153,7 @@ def create_(
         if patient.email:
             background_tasks.add_task(
                 _enviar_confirmacao_agendamento,
+                consulta_id=consulta.id,
                 email_dest=patient.email,
                 paciente_nome=patient.nome_completo,
                 inicio=consulta.inicio,

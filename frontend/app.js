@@ -711,7 +711,7 @@ async function _doCancelFlow(consulta, onChanged) {
     h("div", { class: "cancel-title" }, ["Cancelar consulta?"]),
     h("div", { class: "cancel-sub" }, [
       consulta.paciente_nome
-        ? `${consulta.paciente_nome} • ${modoRange ? formatDate(consulta.inicio) + " " : ""}${formatTime(consulta.inicio)}`
+        ? `${consulta.paciente_nome} • ${formatDate(consulta.inicio)} ${formatTime(consulta.inicio)}`
         : formatTime(consulta.inicio),
     ]),
     h("div", { class: "modal-actions" }, [
@@ -1385,7 +1385,7 @@ function openStatusMenuModal(c, onUpdate) {
 }
 
 // ── Menu de ações da consulta (bottom-sheet) ─────────────────────────────────
-function openConsultMenu({ consulta: c, telNum, _waNum, _waMsg, _waMsgRaw, _emailPac, _clinica, podeConclFalt, onConcluir, onFaltou, onEdit }) {
+function openConsultMenu({ consulta: c, telNum, _waNum, _waMsg, _waMsgRaw, _emailPac, _clinica, podeConclFalt, onConcluir, onFaltou, onCancel, onEdit }) {
   const overlay = h("div", { class: "modal consult-menu-overlay" });
   const panel   = h("div", { class: "consult-menu-panel" });
 
@@ -1462,7 +1462,7 @@ function openConsultMenu({ consulta: c, telNum, _waNum, _waMsg, _waMsgRaw, _emai
 
   // Cancelar consulta
   grid.append(menuBtn({ icon: "❌", label: "Cancelar", cls: "consult-menu-danger", onclick: async () => {
-    await _doCancelFlow(c, () => {});
+    await _doCancelFlow(c, onCancel || (() => {}));
   }}));
 
   panel.append(grid);
@@ -1583,6 +1583,12 @@ async function agendaPage() {
               badge.className = `badge faltou badge-btn`;
               badge.textContent = "Faltou";
               card.className = `consult-card consult-card-faltou`;
+              pulseCard(card);
+            },
+            onCancel: () => {
+              badge.className = `badge cancelada badge-btn`;
+              badge.textContent = "Cancelada";
+              card.className = `consult-card consult-card-cancelada`;
               pulseCard(card);
             },
             onEdit: () => openEdit(c),
