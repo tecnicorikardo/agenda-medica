@@ -739,22 +739,29 @@ async function _cancelMotivoFlow(consulta, onChanged) {
   const motivoInput = h("textarea", {
     class: "input",
     rows: "2",
-    placeholder: "Descreva o motivo...",
-    style: "display:none; margin-top:8px",
+    placeholder: "Descreva o motivo ou selecione uma opção acima...",
+    style: "margin-top:10px; min-height:76px",
   });
+  const selecionarMotivo = (chip, motivo) => {
+    chipWrap.querySelectorAll(".cancel-chip").forEach(c => c.classList.remove("selected"));
+    chip.classList.add("selected");
+    motivoSelecionado = motivo;
+    motivoInput.value = motivo === "Outro" ? "" : motivo;
+    motivoInput.focus();
+  };
 
   const chipWrap = h("div", { class: "cancel-chips" },
     MOTIVOS.map(m => {
       const chip = h("button", {
         class: "cancel-chip",
         type: "button",
-        onclick: () => {
-          chipWrap.querySelectorAll(".cancel-chip").forEach(c => c.classList.remove("selected"));
-          chip.classList.add("selected");
-          motivoSelecionado = m === "Outro" ? "" : m;
-          motivoInput.value = motivoSelecionado || "";
-          motivoInput.style.display = m === "Outro" ? "" : "none";
-          if (m === "Outro") motivoInput.focus();
+        onclick: (e) => {
+          e.preventDefault();
+          selecionarMotivo(chip, m);
+        },
+        onpointerup: (e) => {
+          e.preventDefault();
+          selecionarMotivo(chip, m);
         },
       }, [m]);
       return chip;
@@ -772,9 +779,7 @@ async function _cancelMotivoFlow(consulta, onChanged) {
   const btnSim = h("button", {
     class: "btn danger", type: "button",
     onclick: async () => {
-      const motivo = motivoInput.style.display !== "none"
-        ? motivoInput.value.trim()
-        : motivoSelecionado;
+      const motivo = motivoInput.value.trim() || motivoSelecionado;
       overlay.remove();
       await _executarCancelamento(consulta, motivo || null, onChanged);
     },
