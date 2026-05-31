@@ -97,8 +97,10 @@ def update(db: Session, *, usuario_id, consulta: Consulta, data: ConsultaUpdate)
     return consulta
 
 
-def cancel(db: Session, consulta: Consulta) -> Consulta:
+def cancel(db: Session, consulta: Consulta, motivo: str | None = None) -> Consulta:
     consulta.status = "cancelada"
+    if motivo:
+        consulta.observacoes = f"Cancelado: {motivo}"
     db.add(consulta)
     db.commit()
     db.refresh(consulta)

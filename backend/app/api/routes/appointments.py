@@ -4,7 +4,7 @@ import logging
 from datetime import date, datetime, timezone
 from uuid import UUID
 
-from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 
 from backend.app.crud.patients import get_patient
@@ -187,8 +187,9 @@ def update_(
 
 
 @router.post("/{consulta_id}/cancel", response_model=ConsultaWithPaciente)
-def cancel_(
+async def cancel_(
     consulta_id,
+    request: Request,
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
 ) -> ConsultaWithPaciente:
@@ -197,7 +198,13 @@ def cancel_(
         raise HTTPException(status_code=404, detail="Consulta não encontrada")
     if consulta.usuario_id != user.id:
         raise HTTPException(status_code=404, detail="Consulta não encontrada")
-    consulta = cancel(db, consulta)
+    motivo = None
+    try:
+        body = await request.json()
+        motivo = (body.get("motivo") or "").strip() or None
+    except Exception:
+        motivo = None
+    consulta = cancel(db, consulta, motivo=motivo)
     return _as_with_paciente(consulta)
 
 

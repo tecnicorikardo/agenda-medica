@@ -733,6 +733,7 @@ async function _doCancelFlow(consulta, onChanged) {
 
 async function _cancelMotivoFlow(consulta, onChanged) {
   const MOTIVOS = ["Paciente desistiu", "Sem resposta", "Remarcado", "Problema pessoal", "Outro"];
+  let motivoSelecionado = null;
 
   const overlay = h("div", { class: "modal" });
   const motivoInput = h("textarea", {
@@ -748,9 +749,10 @@ async function _cancelMotivoFlow(consulta, onChanged) {
         class: "cancel-chip",
         type: "button",
         onclick: () => {
-          document.querySelectorAll(".cancel-chip").forEach(c => c.classList.remove("selected"));
+          chipWrap.querySelectorAll(".cancel-chip").forEach(c => c.classList.remove("selected"));
           chip.classList.add("selected");
-          motivoInput.value = m === "Outro" ? "" : m;
+          motivoSelecionado = m === "Outro" ? "" : m;
+          motivoInput.value = motivoSelecionado || "";
           motivoInput.style.display = m === "Outro" ? "" : "none";
           if (m === "Outro") motivoInput.focus();
         },
@@ -772,7 +774,7 @@ async function _cancelMotivoFlow(consulta, onChanged) {
     onclick: async () => {
       const motivo = motivoInput.style.display !== "none"
         ? motivoInput.value.trim()
-        : (document.querySelector(".cancel-chip.selected")?.textContent || null);
+        : motivoSelecionado;
       overlay.remove();
       await _executarCancelamento(consulta, motivo || null, onChanged);
     },

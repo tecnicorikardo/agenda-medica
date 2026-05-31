@@ -166,7 +166,7 @@ def confirmacao_agendamento_paciente_html(
         <span class="card-value">{hora_str} – {hora_fim}</span>
       </div>
       <div class="card-row">
-        <span class="card-label">Local</span>
+        <span class="card-label">Clínica</span>
         <span class="card-value">{escape(clinic_name)}</span>
       </div>{obs_row}
     </div>
@@ -235,7 +235,7 @@ def lembrete_paciente_html(
         <span class="card-value">{hora_str} – {hora_fim}</span>
       </div>
       <div class="card-row">
-        <span class="card-label">Local</span>
+        <span class="card-label">Clínica</span>
         <span class="card-value">{clinic_name}</span>
       </div>{obs_row}
     </div>"""
