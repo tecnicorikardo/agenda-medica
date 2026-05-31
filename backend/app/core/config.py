@@ -17,6 +17,7 @@ class Settings(BaseSettings):
     env: str = Field(default="development", alias="ENV")
     app_timezone: str = Field(default="America/Sao_Paulo", alias="APP_TIMEZONE")
     public_base_url: str = Field(default="", alias="APP_PUBLIC_URL")
+    scheduler_enabled: bool = Field(default=True, alias="SCHEDULER_ENABLED")
 
     database_url: str = Field(alias="DATABASE_URL")
 

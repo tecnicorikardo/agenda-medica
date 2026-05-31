@@ -18,6 +18,8 @@ services:
         value: "https://agenda-medica-2c9b.onrender.com"
       - key: APP_NAME
         value: "Agenda Médica"
+      - key: SCHEDULER_ENABLED
+        value: "false"
       # Mercado Pago (preencha manualmente no dashboard do Render)
       # - key: MERCADOPAGO_ACCESS_TOKEN
       #   value: APP_USR-...
@@ -36,6 +38,29 @@ services:
       #   value: seu@gmail.com
       # - key: SMTP_FROM_NAME
       #   value: Agenda Médica
+
+  - type: cron
+    name: agenda-medica-lembretes-email
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: python -m backend.scripts.send_email_reminders --dias 1 --dias 2
+    # Render usa UTC no cron: 11:00 UTC = 08:00 em America/Sao_Paulo.
+    schedule: "0 11 * * *"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: agenda-medica-db
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: APP_TIMEZONE
+        value: "America/Sao_Paulo"
+      - key: APP_PUBLIC_URL
+        value: "https://agenda-medica-2c9b.onrender.com"
+      - key: APP_NAME
+        value: "Agenda Médica"
+      # Configure no cron job as mesmas credenciais de e-mail do web service
+      # (RESEND_API_KEY, BREVO_API_KEY ou SMTP_*).
 
 databases:
   - name: agenda-medica-db

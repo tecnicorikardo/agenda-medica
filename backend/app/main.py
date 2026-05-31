@@ -16,10 +16,13 @@ from backend.app.services.scheduler import start_scheduler, stop_scheduler
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # ── Startup ──────────────────────────────────────────────────────────
-    start_scheduler()
+    settings = get_settings()
+    if settings.scheduler_enabled:
+        start_scheduler()
     yield
     # ── Shutdown ─────────────────────────────────────────────────────────
-    stop_scheduler()
+    if settings.scheduler_enabled:
+        stop_scheduler()
 
 
 def create_app() -> FastAPI:

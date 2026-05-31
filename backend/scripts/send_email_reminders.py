@@ -46,16 +46,17 @@ def _day_window(dias_antes: int) -> tuple[datetime, datetime]:
     return inicio, inicio + timedelta(days=1)
 
 
-def _ja_enviado(db, consulta_id, canal: str = "email") -> bool:
+def _ja_enviado(db, consulta_id, canal: str = "email", dias_antes: int | None = None) -> bool:
     from sqlalchemy import and_, select
     from backend.app.models.reminder import Lembrete
-    return db.scalar(
-        select(Lembrete).where(and_(
-            Lembrete.consulta_id == consulta_id,
-            Lembrete.canal == canal,
-            Lembrete.status == "enviado",
-        ))
-    ) is not None
+    stmt = select(Lembrete).where(and_(
+        Lembrete.consulta_id == consulta_id,
+        Lembrete.canal == canal,
+        Lembrete.status == "enviado",
+    ))
+    if dias_antes is not None:
+        stmt = stmt.where(Lembrete.payload["dias_antes"].as_integer() == dias_antes)
+    return db.scalar(stmt) is not None
 
 
 async def _processar_medico(db, medico, consultas_do_dia: list, dias_antes: int) -> bool:
@@ -71,7 +72,7 @@ async def _processar_medico(db, medico, consultas_do_dia: list, dias_antes: int)
 
     # Verifica se já enviou resumo do dia (usa consulta_id da primeira consulta como chave)
     primeira = consultas_do_dia[0]
-    if _ja_enviado(db, primeira.id, canal="email_medico"):
+    if _ja_enviado(db, primeira.id, canal="email_medico", dias_antes=dias_antes):
         print(f"    [MÉDICO] Resumo já enviado hoje.")
         return False
 
@@ -105,7 +106,13 @@ async def _processar_medico(db, medico, consultas_do_dia: list, dias_antes: int)
         canal="email_medico",
         agendado_para=datetime.now(TZ),
         status="pendente",
-        payload={"email": email_medico, "subject": subject, "total": len(consultas_do_dia)},
+        payload={
+            "email": email_medico,
+            "subject": subject,
+            "total": len(consultas_do_dia),
+            "dias_antes": dias_antes,
+            "data_consultas": foco.inicio.astimezone(TZ).date().isoformat(),
+        },
     )
     db.add(lembrete)
     db.flush()
@@ -191,7 +198,7 @@ async def _processar(dias_antes: int) -> dict:
                     stats["skip"] += 1
                     continue
 
-                if _ja_enviado(db, c.id):
+                if _ja_enviado(db, c.id, dias_antes=dias_antes):
                     print(f"    [PACIENTE] {paciente.nome_completo} — já enviado. Pulando.")
                     stats["skip"] += 1
                     continue
@@ -228,7 +235,12 @@ async def _processar(dias_antes: int) -> dict:
                     canal="email",
                     agendado_para=datetime.now(TZ),
                     status="pendente",
-                    payload={"email": email_dest, "subject": subject},
+                    payload={
+                        "email": email_dest,
+                        "subject": subject,
+                        "dias_antes": dias_antes,
+                        "data_consulta": c.inicio.astimezone(TZ).date().isoformat(),
+                    },
                 )
                 db.add(lembrete)
                 db.flush()
