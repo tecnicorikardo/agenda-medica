@@ -46,6 +46,15 @@ class Settings(BaseSettings):
     vapid_private_key: str = Field(default="", alias="VAPID_PRIVATE_KEY")
     vapid_mailto: str = Field(default="mailto:admin@example.com", alias="VAPID_MAILTO")
 
+    # WhatsApp Cloud API
+    whatsapp_access_token: str = Field(default="", alias="WHATSAPP_ACCESS_TOKEN")
+    whatsapp_phone_number_id: str = Field(default="", alias="WHATSAPP_PHONE_NUMBER_ID")
+    whatsapp_api_version: str = Field(default="v20.0", alias="WHATSAPP_API_VERSION")
+    whatsapp_default_country_code: str = Field(default="55", alias="WHATSAPP_DEFAULT_COUNTRY_CODE")
+    whatsapp_patient_template_name: str = Field(default="", alias="WHATSAPP_PATIENT_TEMPLATE_NAME")
+    whatsapp_doctor_template_name: str = Field(default="", alias="WHATSAPP_DOCTOR_TEMPLATE_NAME")
+    whatsapp_template_language: str = Field(default="pt_BR", alias="WHATSAPP_TEMPLATE_LANGUAGE")
+
     # Resend API (alternativa ao SMTP para produção em cloud)
     resend_api_key: str = Field(default="", alias="RESEND_API_KEY")
 

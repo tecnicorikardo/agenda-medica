@@ -2,8 +2,8 @@
 Scheduler de tarefas automáticas — roda dentro do processo uvicorn.
 
 Tarefas agendadas:
-  - 08:00 (America/Sao_Paulo) → envia lembretes de e-mail para consultas
-    de amanhã (e/ou em 2 dias, conforme config de cada médico).
+  - 08:00 (America/Sao_Paulo) → envia lembretes por e-mail, WhatsApp e push
+    para consultas de amanhã (e/ou em 2 dias, conforme config de cada médico).
 
 O scheduler usa APScheduler com AsyncIOScheduler para não bloquear
 o event loop do FastAPI.
@@ -25,7 +25,7 @@ _scheduler: AsyncIOScheduler | None = None
 
 
 async def _job_lembretes() -> None:
-    """Executa o envio de lembretes por e-mail (e push) para os próximos dias."""
+    """Executa o envio de lembretes para os próximos dias."""
     logger.info("[Scheduler] Iniciando envio de lembretes...")
     try:
         # Importa aqui para evitar import circular no startup
@@ -38,12 +38,17 @@ async def _job_lembretes() -> None:
         for dias in [1, 2]:
             stats = await _processar(dias)
             logger.info(
-                "[Scheduler] %d dia(s) — pacientes: %d enviados, %d pulados, %d erros | médicos: %d",
+                (
+                    "[Scheduler] %d dia(s) — e-mail pacientes: %d enviados, %d pulados, %d erros | "
+                    "e-mail médicos: %d | WhatsApp pacientes: %d | WhatsApp médicos: %d"
+                ),
                 dias,
                 stats.get("pacientes", 0),
                 stats.get("skip", 0),
                 stats.get("erros", 0),
                 stats.get("medicos", 0),
+                stats.get("whatsapp_pacientes", 0),
+                stats.get("whatsapp_medicos", 0),
             )
     except Exception as exc:
         logger.exception("[Scheduler] Erro ao enviar lembretes: %s", exc)
@@ -62,8 +67,8 @@ def start_scheduler() -> AsyncIOScheduler:
     _scheduler.add_job(
         _job_lembretes,
         trigger=CronTrigger(hour=8, minute=0, timezone=tz),
-        id="lembretes_email",
-        name="Lembretes de e-mail diários",
+        id="lembretes_diarios",
+        name="Lembretes diários",
         replace_existing=True,
         misfire_grace_time=3600,  # tolera até 1h de atraso (ex: restart do servidor)
     )

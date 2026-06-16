@@ -38,9 +38,22 @@ services:
       #   value: seu@gmail.com
       # - key: SMTP_FROM_NAME
       #   value: Agenda Médica
+      # WhatsApp Cloud API (preencha manualmente no dashboard do Render)
+      # - key: WHATSAPP_ACCESS_TOKEN
+      #   value: EA...
+      # - key: WHATSAPP_PHONE_NUMBER_ID
+      #   value: "1234567890"
+      # - key: WHATSAPP_API_VERSION
+      #   value: v20.0
+      # - key: WHATSAPP_TEMPLATE_LANGUAGE
+      #   value: pt_BR
+      # - key: WHATSAPP_PATIENT_TEMPLATE_NAME
+      #   value: agenda_paciente_lembrete
+      # - key: WHATSAPP_DOCTOR_TEMPLATE_NAME
+      #   value: agenda_medico_resumo
 
   - type: cron
-    name: agenda-medica-lembretes-email
+    name: agenda-medica-lembretes
     runtime: docker
     dockerfilePath: ./Dockerfile
     dockerCommand: python -m backend.scripts.send_email_reminders --dias 1 --dias 2
@@ -60,7 +73,8 @@ services:
       - key: APP_NAME
         value: "Agenda Médica"
       # Configure no cron job as mesmas credenciais de e-mail do web service
-      # (RESEND_API_KEY, BREVO_API_KEY ou SMTP_*).
+      # (RESEND_API_KEY, BREVO_API_KEY ou SMTP_*) e as credenciais de WhatsApp
+      # (WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID e templates, se usar).
 
 databases:
   - name: agenda-medica-db

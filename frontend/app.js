@@ -2636,8 +2636,8 @@ async function perfilPage() {
       }, ["↺ Restaurar padrão"]),
     ]),
     h("div", { class: "sub" }, [
-      "O e-mail do médico é o campo \"E-mail para lembretes\" acima. ",
-      "O paciente recebe no e-mail cadastrado no prontuário.",
+      "O e-mail do médico é o campo \"E-mail para lembretes\" e o WhatsApp usa \"WhatsApp / Telefone\" acima. ",
+      "O paciente recebe nos contatos cadastrados no prontuário.",
     ]),
     h("div", { class: "row", style: "margin-top:4px" }, [btnSalvarLembrete]),
   );
@@ -2814,7 +2814,7 @@ async function perfilPage() {
       // ── Card lembretes ───────────────────────────────────────────────────
       h("div", { class: "card col-12" }, [
         h("div", { class: "row", style: "margin-bottom:14px; align-items:center" }, [
-          h("h2", { style: "margin:0" }, ["📧 Lembretes automáticos por e-mail"]),
+          h("h2", { style: "margin:0" }, ["📨 Lembretes automáticos"]),
           h("div", { class: "spacer" }),
           h("label", { class: "lembrete-toggle-label" }, [
             chkAtivo,
@@ -2824,7 +2824,7 @@ async function perfilPage() {
           ]),
         ]),
         h("div", { class: "sub", style: "margin-bottom:16px" }, [
-          "O sistema envia automaticamente um e-mail para o paciente e um resumo para você antes de cada consulta. ",
+          "O sistema envia automaticamente lembretes por e-mail e WhatsApp para o paciente e um resumo para você antes de cada consulta. ",
           "Configure quando e com qual mensagem.",
         ]),
         h("form", {
@@ -2986,6 +2986,53 @@ async function perfilPage() {
       h("div", { class: "row", style: "margin-top:12px" }, [btnTestarEmail]),
     ]);
     cardsGrid.append(emailCard);
+
+    // ── Card de teste de WhatsApp ──────────────────────────────────────────
+    const whatsappTestStatus = h("div", { class: "push-status", style: "min-height:0" });
+    const btnTestarWhatsapp = h("button", { class: "btn whatsapp", type: "button" }, ["💬 Enviar WhatsApp de teste"]);
+
+    btnTestarWhatsapp.onclick = async () => {
+      btnTestarWhatsapp.disabled = true;
+      btnTestarWhatsapp.textContent = "Enviando...";
+      whatsappTestStatus.className = "push-status";
+      whatsappTestStatus.innerHTML = "";
+      try {
+        const r = await api("/whatsapp/test", { method: "POST", body: "{}" });
+        const res = r.resultados || {};
+        let html = "";
+        if (res.medico) {
+          const icon = res.medico.ok ? "✅" : "⚠️";
+          html += `<div>${icon} <strong>Médico:</strong> ${res.medico.telefone || ""} — ${res.medico.detalhe}</div>`;
+        }
+        if (res.paciente) {
+          const icon = res.paciente.ok ? "✅" : "⚠️";
+          const pac = res.paciente.paciente ? ` (${res.paciente.paciente})` : "";
+          html += `<div>${icon} <strong>Paciente${pac}:</strong> ${res.paciente.telefone || ""} — ${res.paciente.detalhe}</div>`;
+        }
+        const hasSuccess = Object.values(res).some(item => item && item.ok);
+        whatsappTestStatus.innerHTML = html || "Concluído.";
+        whatsappTestStatus.className = "push-status " + (hasSuccess ? "push-ok" : "push-warn");
+      } catch (err) {
+        whatsappTestStatus.className = "push-status push-warn";
+        whatsappTestStatus.textContent = "Erro: " + err.message;
+      } finally {
+        btnTestarWhatsapp.disabled = false;
+        btnTestarWhatsapp.textContent = "💬 Enviar WhatsApp de teste";
+      }
+    };
+
+    const whatsappCard = h("div", { class: "card col-12" }, [
+      h("div", { class: "row", style: "margin-bottom:12px" }, [
+        h("h2", { style: "margin:0" }, ["💬 Teste de WhatsApp"]),
+      ]),
+      h("div", { class: "sub", style: "margin-bottom:14px" }, [
+        "Dispara uma mensagem real via WhatsApp Cloud API para o telefone do médico e para o paciente da próxima consulta. ",
+        "Use para validar token, Phone Number ID e contatos cadastrados.",
+      ]),
+      whatsappTestStatus,
+      h("div", { class: "row", style: "margin-top:12px" }, [btnTestarWhatsapp]),
+    ]);
+    cardsGrid.append(whatsappCard);
 
     const acessoAte = u.acesso_ate
       ? new Date(u.acesso_ate).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })

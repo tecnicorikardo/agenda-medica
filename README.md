@@ -102,7 +102,7 @@ Abra: `http://localhost:8000`
    ```
 4. As migrations rodam automaticamente no startup do container.
 
-### Variáveis opcionais (e-mail e push)
+### Variáveis opcionais (e-mail, WhatsApp e push)
 
 ```
 SMTP_HOST           = smtp.gmail.com
@@ -113,6 +113,20 @@ SMTP_PASSWORD       = sua-senha-de-app
 SMTP_FROM_EMAIL     = seu@gmail.com
 SMTP_FROM_NAME      = Agenda Médica
 ```
+
+Para WhatsApp Cloud API, configure no ambiente de produção:
+
+```
+WHATSAPP_ACCESS_TOKEN          = token-da-meta
+WHATSAPP_PHONE_NUMBER_ID       = id-do-numero-whatsapp
+WHATSAPP_API_VERSION           = v20.0
+WHATSAPP_DEFAULT_COUNTRY_CODE  = 55
+WHATSAPP_TEMPLATE_LANGUAGE     = pt_BR
+WHATSAPP_PATIENT_TEMPLATE_NAME = nome_do_template_paciente
+WHATSAPP_DOCTOR_TEMPLATE_NAME  = nome_do_template_medico
+```
+
+Sem templates aprovados, o sistema tenta enviar texto livre pela Cloud API, útil para testes e conversas dentro da janela permitida pela Meta. Para lembretes automáticos de consulta em produção, use templates aprovados no WhatsApp Manager.
 
 ---
 
@@ -129,6 +143,6 @@ python -c "import urllib.parse; print(urllib.parse.quote_plus('SUA_SENHA'))"
 ## Melhorias futuras
 
 - Calendário semanal/mensal
-- Integração WhatsApp (webhook + templates)
+- Webhook de respostas do WhatsApp
 - Auditoria e logs
 - Multiusuários com permissões
