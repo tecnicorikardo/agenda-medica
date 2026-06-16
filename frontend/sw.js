@@ -1,6 +1,7 @@
 /* Service Worker — Agenda Médica */
-const CACHE = "agenda-v7";
+const CACHE = "agenda-v8";
 const PRECACHE = ["/", "/app.js", "/app.css", "/manifest.json", "/icons/icon-192.png"];
+const NETWORK_FIRST_ASSETS = new Set(["/app.js", "/app.css"]);
 
 // ── Install: pré-cache dos assets principais ──────────────────────────────────
 self.addEventListener("install", (e) => {
@@ -29,6 +30,19 @@ self.addEventListener("fetch", (e) => {
   if (e.request.mode === "navigate") {
     e.respondWith(
       fetch(e.request).catch(() => caches.match("/"))
+    );
+    return;
+  }
+
+  if (NETWORK_FIRST_ASSETS.has(url.pathname)) {
+    e.respondWith(
+      fetch(e.request).then((res) => {
+        if (res && res.status === 200 && res.type === "basic") {
+          const clone = res.clone();
+          caches.open(CACHE).then((c) => c.put(e.request, clone));
+        }
+        return res;
+      }).catch(() => caches.match(e.request))
     );
     return;
   }
