@@ -119,6 +119,7 @@ Para WhatsApp Cloud API, configure no ambiente de produção:
 ```
 WHATSAPP_ACCESS_TOKEN          = token-da-meta
 WHATSAPP_PHONE_NUMBER_ID       = id-do-numero-whatsapp
+WHATSAPP_BUSINESS_ACCOUNT_ID   = id-da-conta-whatsapp-business
 WHATSAPP_API_VERSION           = v20.0
 WHATSAPP_DEFAULT_COUNTRY_CODE  = 55
 WHATSAPP_TEMPLATE_LANGUAGE     = pt_BR

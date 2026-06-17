@@ -49,6 +49,7 @@ class Settings(BaseSettings):
     # WhatsApp Cloud API
     whatsapp_access_token: str = Field(default="", alias="WHATSAPP_ACCESS_TOKEN")
     whatsapp_phone_number_id: str = Field(default="", alias="WHATSAPP_PHONE_NUMBER_ID")
+    whatsapp_business_account_id: str = Field(default="", alias="WHATSAPP_BUSINESS_ACCOUNT_ID")
     whatsapp_api_version: str = Field(default="v20.0", alias="WHATSAPP_API_VERSION")
     whatsapp_default_country_code: str = Field(default="55", alias="WHATSAPP_DEFAULT_COUNTRY_CODE")
     whatsapp_patient_template_name: str = Field(default="", alias="WHATSAPP_PATIENT_TEMPLATE_NAME")

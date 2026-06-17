@@ -207,8 +207,29 @@ Junto com o lembrete do paciente, o médico recebe um resumo com o total de cons
 
 Variáveis disponíveis: `{paciente}`, `{data}`, `{hora}`, `{total_dia}`, `{clinica}`
 
-### Lembretes via WhatsApp
-Script que gera links `wa.me` com mensagem pré-formatada para envio manual. O médico executa o script e os links abrem no navegador para envio com um clique.
+### Lembretes via WhatsApp (Cloud API)
+O sistema envia lembretes automaticamente via WhatsApp Business API (Meta Cloud API) para pacientes e médicos.
+
+**Configuração necessária:**
+1. Criar templates de mensagem no Meta Business Manager
+2. Aguardar aprovação do Meta (pode levar até 48h)
+3. Configurar nomes dos templates aprovados no `.env`:
+   - `WHATSAPP_PATIENT_TEMPLATE_NAME` - template para pacientes
+   - `WHATSAPP_DOCTOR_TEMPLATE_NAME` - template para médicos
+   - `WHATSAPP_BUSINESS_ACCOUNT_ID` - conta WhatsApp Business onde os templates foram criados
+
+**Como funciona:**
+- Quando os templates estão vazios, o sistema tenta enviar mensagens de texto simples
+- Mensagens de texto simples **só funcionam em conversas já iniciadas** (últimas 24h)
+- Para **primeira mensagem** para o paciente, é **obrigatório** usar template aprovado pelo Meta
+- Por isso, médicos recebem mensagens mas pacientes não recebem (sem template aprovado)
+
+**Verificar templates:**
+```bash
+python -m backend.scripts.check_whatsapp_templates
+```
+
+**Veja mais detalhes:** [docs/WHATSAPP_TEMPLATES.md](./WHATSAPP_TEMPLATES.md)
 
 ### Notificações push (Web Push)
 O sistema suporta notificações push no navegador e em dispositivos com o app instalado (PWA). O médico pode:

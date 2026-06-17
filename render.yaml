@@ -43,6 +43,8 @@ services:
       #   value: EA...
       # - key: WHATSAPP_PHONE_NUMBER_ID
       #   value: "1234567890"
+      # - key: WHATSAPP_BUSINESS_ACCOUNT_ID
+      #   value: "1234567890"
       # - key: WHATSAPP_API_VERSION
       #   value: v20.0
       # - key: WHATSAPP_TEMPLATE_LANGUAGE
@@ -72,9 +74,36 @@ services:
         value: "https://agenda-medica-2c9b.onrender.com"
       - key: APP_NAME
         value: "Agenda Médica"
-      # Configure no cron job as mesmas credenciais de e-mail do web service
-      # (RESEND_API_KEY, BREVO_API_KEY ou SMTP_*) e as credenciais de WhatsApp
-      # (WHATSAPP_ACCESS_TOKEN, WHATSAPP_PHONE_NUMBER_ID e templates, se usar).
+      # E-mail (preencha no dashboard do Render também para o cron)
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USE_TLS
+        value: "true"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM_EMAIL
+        sync: false
+      - key: SMTP_FROM_NAME
+        value: Agenda Médica
+      # WhatsApp Cloud API (preencha no dashboard do Render)
+      - key: WHATSAPP_ACCESS_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_BUSINESS_ACCOUNT_ID
+        sync: false
+      - key: WHATSAPP_API_VERSION
+        value: v20.0
+      - key: WHATSAPP_TEMPLATE_LANGUAGE
+        value: pt_BR
+      - key: WHATSAPP_PATIENT_TEMPLATE_NAME
+        sync: false
+      - key: WHATSAPP_DOCTOR_TEMPLATE_NAME
+        sync: false
 
 databases:
   - name: agenda-medica-db
