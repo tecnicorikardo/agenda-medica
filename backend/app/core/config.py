@@ -55,6 +55,12 @@ class Settings(BaseSettings):
     whatsapp_patient_template_name: str = Field(default="", alias="WHATSAPP_PATIENT_TEMPLATE_NAME")
     whatsapp_doctor_template_name: str = Field(default="", alias="WHATSAPP_DOCTOR_TEMPLATE_NAME")
     whatsapp_template_language: str = Field(default="pt_BR", alias="WHATSAPP_TEMPLATE_LANGUAGE")
+    whatsapp_patient_template_parameter_mode: str = Field(
+        default="standard",
+        alias="WHATSAPP_PATIENT_TEMPLATE_PARAMETER_MODE",
+    )
+    whatsapp_verify_token: str = Field(default="", alias="WHATSAPP_VERIFY_TOKEN")
+    whatsapp_app_secret: str = Field(default="", alias="WHATSAPP_APP_SECRET")
 
     # Resend API (alternativa ao SMTP para produção em cloud)
     resend_api_key: str = Field(default="", alias="RESEND_API_KEY")

@@ -2483,6 +2483,12 @@ async function pacientesPage() {
 async function perfilPage() {
   await ensureMe();
   const u = state.me.usuario;
+  let whatsappTemplates = [];
+  try {
+    whatsappTemplates = await api("/whatsapp/templates");
+  } catch (err) {
+    toast("Não foi possível carregar os templates do WhatsApp: " + err.message);
+  }
 
   // ── Campos do perfil ──────────────────────────────────────────────────────
   const fNome = h("input", { class: "input", value: u.nome || "", placeholder: "Dr(a). Nome Sobrenome" });
@@ -2557,10 +2563,15 @@ async function perfilPage() {
 
   // ── Configurações de lembrete ─────────────────────────────────────────────
   const dias = u.lembrete_dias || [1];
+  const horas = u.lembrete_horas || [24, 2];
   const chk1 = h("input", { type: "checkbox", id: "lembrete_1dia", class: "lembrete-chk" });
   const chk2 = h("input", { type: "checkbox", id: "lembrete_2dias", class: "lembrete-chk" });
+  const chk24h = h("input", { type: "checkbox", id: "lembrete_24h", class: "lembrete-chk" });
+  const chk2h = h("input", { type: "checkbox", id: "lembrete_2h", class: "lembrete-chk" });
   if (dias.includes(1)) chk1.checked = true;
   if (dias.includes(2)) chk2.checked = true;
+  if (horas.includes(24)) chk24h.checked = true;
+  if (horas.includes(2)) chk2h.checked = true;
 
   const chkAtivo = h("input", { type: "checkbox", id: "lembrete_ativo", class: "lembrete-chk" });
   chkAtivo.checked = u.lembrete_ativo !== false;
@@ -2594,6 +2605,120 @@ async function perfilPage() {
 
   const lembreteBody = h("div", { class: "form", style: lembreteSectionStyle() });
 
+  const templateLabels = {
+    lembrete: "Mensagem de lembrete",
+    confirmacao: "Mensagem após confirmar",
+    cancelamento: "Mensagem após cancelar",
+  };
+  const templateOrder = ["lembrete", "confirmacao", "cancelamento"];
+  const templateVariables = ["paciente", "medico", "data", "hora", "data_hora", "clinica", "telefone"];
+  const templateSamples = {
+    paciente: "Maria da Silva",
+    medico: u.nome || "João Souza",
+    data: "20/06/2026",
+    hora: "14:30",
+    data_hora: "20/06/2026 às 14:30",
+    clinica: u.nome_clinica || "Clínica Exemplo",
+    telefone: u.telefone || "(11) 99999-9999",
+  };
+  const templateEditors = {};
+
+  function renderTemplatePreview(content) {
+    let preview = content;
+    for (const [key, value] of Object.entries(templateSamples)) {
+      preview = preview.replaceAll(`{${key}}`, value);
+    }
+    return preview;
+  }
+
+  function buildTemplateEditor(tipo) {
+    const saved = whatsappTemplates.find((item) => item.tipo === tipo) || {};
+    const textarea = h("textarea", {
+      class: "input lembrete-textarea whatsapp-template-textarea",
+      rows: "5",
+    }, [saved.conteudo || saved.padrao || ""]);
+    const preview = h("div", { class: "whatsapp-template-preview" }, [
+      renderTemplatePreview(textarea.value),
+    ]);
+    textarea.addEventListener("input", () => {
+      preview.textContent = renderTemplatePreview(textarea.value);
+    });
+
+    const resetButton = h("button", {
+      class: "btn lembrete-reset-btn",
+      type: "button",
+      onclick: async () => {
+        resetButton.disabled = true;
+        try {
+          const restored = await api(`/whatsapp/templates/${tipo}/reset`, {
+            method: "POST",
+            body: "{}",
+          });
+          textarea.value = restored.conteudo;
+          preview.textContent = renderTemplatePreview(restored.conteudo);
+          toast(`${templateLabels[tipo]} restaurada.`);
+        } catch (err) {
+          toast(err.message);
+        } finally {
+          resetButton.disabled = false;
+        }
+      },
+    }, ["↻ Restaurar padrão"]);
+
+    templateEditors[tipo] = { textarea, preview };
+    return h("div", { class: "whatsapp-template-editor" }, [
+      h("label", { class: "label" }, [
+        templateLabels[tipo],
+        h("span", { class: "lembrete-vars" }, [
+          `Variáveis: ${templateVariables.map((name) => `{${name}}`).join(", ")}`,
+        ]),
+      ]),
+      textarea,
+      h("div", { class: "whatsapp-preview-label" }, ["Prévia"]),
+      preview,
+      resetButton,
+    ]);
+  }
+
+  const saveWhatsappTemplates = h("button", {
+    class: "btn primary",
+    type: "submit",
+  }, ["Salvar mensagens do WhatsApp"]);
+  const whatsappTemplatesCard = h("div", { class: "card col-12" }, [
+    h("div", { class: "row", style: "margin-bottom:14px; align-items:center" }, [
+      h("h2", { style: "margin:0" }, ["💬 Mensagens do WhatsApp"]),
+    ]),
+    h("div", { class: "sub", style: "margin-bottom:16px" }, [
+      "Estas mensagens pertencem somente à sua conta. O lembrete exibe os botões “Confirmar Consulta” e “Cancelar Consulta”.",
+    ]),
+    h("form", {
+      class: "form",
+      onsubmit: async (e) => {
+        e.preventDefault();
+        saveWhatsappTemplates.disabled = true;
+        saveWhatsappTemplates.textContent = "Salvando...";
+        try {
+          await Promise.all(templateOrder.map((tipo) => api(`/whatsapp/templates/${tipo}`, {
+            method: "PUT",
+            body: JSON.stringify({
+              conteudo: templateEditors[tipo].textarea.value.trim(),
+              ativo: true,
+            }),
+          })));
+          toast("Mensagens do WhatsApp salvas!");
+        } catch (err) {
+          toast(err.message);
+        } finally {
+          saveWhatsappTemplates.disabled = false;
+          saveWhatsappTemplates.textContent = "Salvar mensagens do WhatsApp";
+        }
+      },
+    }, [
+      ...templateOrder.map(buildTemplateEditor),
+      h("div", { class: "row", style: "margin-top:4px" }, [saveWhatsappTemplates]),
+    ]),
+  ]);
+
   chkAtivo.addEventListener("change", () => {
     lembreteBody.style.cssText = lembreteSectionStyle();
   });
@@ -2601,7 +2726,7 @@ async function perfilPage() {
   // Monta o corpo do card de lembretes
   lembreteBody.append(
     h("div", { class: "lembrete-dias-row" }, [
-      h("span", { class: "label" }, ["Enviar lembrete:"]),
+      h("span", { class: "label" }, ["E-mail e resumo:"]),
       h("label", { class: "lembrete-dia-label" }, [
         chk1,
         h("span", {}, ["1 dia antes"]),
@@ -2609,6 +2734,17 @@ async function perfilPage() {
       h("label", { class: "lembrete-dia-label" }, [
         chk2,
         h("span", {}, ["2 dias antes"]),
+      ]),
+    ]),
+    h("div", { class: "lembrete-dias-row" }, [
+      h("span", { class: "label" }, ["WhatsApp interativo:"]),
+      h("label", { class: "lembrete-dia-label" }, [
+        chk24h,
+        h("span", {}, ["24 horas antes"]),
+      ]),
+      h("label", { class: "lembrete-dia-label" }, [
+        chk2h,
+        h("span", {}, ["2 horas antes"]),
       ]),
     ]),
     h("div", {}, [
@@ -2835,11 +2971,15 @@ async function perfilPage() {
             btnSalvarLembrete.textContent = "Salvando...";
             try {
               const diasSel = [];
+              const horasSel = [];
               if (chk1.checked) diasSel.push(1);
               if (chk2.checked) diasSel.push(2);
+              if (chk24h.checked) horasSel.push(24);
+              if (chk2h.checked) horasSel.push(2);
               const payload = {
                 lembrete_ativo: chkAtivo.checked,
                 lembrete_dias: diasSel.length ? diasSel : [1],
+                lembrete_horas: horasSel.length ? horasSel : [24],
                 lembrete_msg_paciente: fMsgPaciente.value.trim() || null,
                 lembrete_msg_medico: fMsgMedico.value.trim() || null,
               };
@@ -2855,6 +2995,7 @@ async function perfilPage() {
           },
         }, [lembreteBody]),
       ]),
+      whatsappTemplatesCard,
     ]),
   ]);
 

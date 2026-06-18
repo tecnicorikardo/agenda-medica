@@ -124,6 +124,7 @@ async def send_whatsapp_template(
     template_name: str,
     language_code: str,
     body_parameters: list[str] | None = None,
+    quick_reply_payloads: list[str] | None = None,
 ) -> WhatsAppResult:
     _ensure_configured()
     phone = normalize_whatsapp_phone(to)
@@ -134,14 +135,24 @@ async def send_whatsapp_template(
         "name": template_name,
         "language": {"code": language_code},
     }
+    components: list[dict[str, Any]] = []
     if body_parameters:
-        template["components"] = [{
+        components.append({
             "type": "body",
             "parameters": [
                 {"type": "text", "text": str(value)}
                 for value in body_parameters
             ],
-        }]
+        })
+    for index, payload in enumerate(quick_reply_payloads or []):
+        components.append({
+            "type": "button",
+            "sub_type": "quick_reply",
+            "index": str(index),
+            "parameters": [{"type": "payload", "payload": payload}],
+        })
+    if components:
+        template["components"] = components
 
     return await _post_message({
         "messaging_product": "whatsapp",
@@ -159,6 +170,7 @@ async def send_whatsapp_message(
     template_name: str = "",
     language_code: str = "pt_BR",
     template_parameters: list[str] | None = None,
+    quick_reply_payloads: list[str] | None = None,
 ) -> WhatsAppResult:
     if template_name:
         return await send_whatsapp_template(
@@ -166,5 +178,6 @@ async def send_whatsapp_message(
             template_name=template_name,
             language_code=language_code,
             body_parameters=template_parameters,
+            quick_reply_payloads=quick_reply_payloads,
         )
     return await send_whatsapp_text(to=to, body=body)

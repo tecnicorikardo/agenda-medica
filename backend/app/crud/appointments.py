@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import date, datetime, time, timedelta
+from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 from sqlalchemy import and_, func, select
@@ -70,6 +70,7 @@ def create(db: Session, *, usuario_id, data: ConsultaCreate) -> Consulta:
     if has_conflict(db, usuario_id=usuario_id, inicio=data.inicio, fim=data.fim):
         raise ValueError("Conflito de horário: já existe consulta nesse intervalo")
     consulta = Consulta(usuario_id=usuario_id, **data.model_dump())
+    _apply_status_metadata(consulta, consulta.status)
     db.add(consulta)
     db.commit()
     db.refresh(consulta)
@@ -90,6 +91,8 @@ def update(db: Session, *, usuario_id, consulta: Consulta, data: ConsultaUpdate)
 
     for k, v in updates.items():
         setattr(consulta, k, v)
+    if "status" in updates:
+        _apply_status_metadata(consulta, updates["status"])
 
     db.add(consulta)
     db.commit()
@@ -99,6 +102,7 @@ def update(db: Session, *, usuario_id, consulta: Consulta, data: ConsultaUpdate)
 
 def cancel(db: Session, consulta: Consulta, motivo: str | None = None) -> Consulta:
     consulta.status = "cancelada"
+    _apply_status_metadata(consulta, "cancelada")
     if motivo:
         consulta.observacoes = f"Cancelado: {motivo}"
     db.add(consulta)
@@ -109,7 +113,20 @@ def cancel(db: Session, consulta: Consulta, motivo: str | None = None) -> Consul
 
 def mark_status(db: Session, consulta: Consulta, status: str) -> Consulta:
     consulta.status = status
+    _apply_status_metadata(consulta, status)
     db.add(consulta)
     db.commit()
     db.refresh(consulta)
     return consulta
+
+
+def _apply_status_metadata(consulta: Consulta, status: str) -> None:
+    now = datetime.now(timezone.utc)
+    if status == "confirmada":
+        consulta.data_confirmacao = now
+        consulta.data_cancelamento = None
+    elif status == "cancelada":
+        consulta.data_cancelamento = now
+    elif status == "agendada":
+        consulta.data_confirmacao = None
+        consulta.data_cancelamento = None

@@ -34,6 +34,8 @@ class Consulta(Base):
     fim: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, index=True)
     status: Mapped[str] = mapped_column(String(20), nullable=False, index=True)
     observacoes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    data_confirmacao: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    data_cancelamento: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
@@ -43,4 +45,3 @@ class Consulta(Base):
     )
 
     paciente = relationship("Paciente", back_populates="consultas")
-

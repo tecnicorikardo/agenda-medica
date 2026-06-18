@@ -30,6 +30,7 @@ class Usuario(Base):
     # Configurações de lembrete por e-mail
     lembrete_ativo: Mapped[bool] = mapped_column(Boolean, nullable=False, server_default="true")
     lembrete_dias: Mapped[list[int] | None] = mapped_column(ARRAY(Integer), nullable=True)
+    lembrete_horas: Mapped[list[int] | None] = mapped_column(ARRAY(Integer), nullable=True)
     lembrete_msg_paciente: Mapped[str | None] = mapped_column(Text, nullable=True)
     lembrete_msg_medico: Mapped[str | None] = mapped_column(Text, nullable=True)
 

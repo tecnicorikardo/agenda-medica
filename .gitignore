@@ -9,6 +9,7 @@ __pycache__/
 
 # Variáveis de ambiente — NUNCA subir
 .env
+*.env
 MINHAS_CONTAS.md
 
 # Chaves VAPID — ficam nas variáveis do Railway

@@ -51,8 +51,14 @@ services:
       #   value: pt_BR
       # - key: WHATSAPP_PATIENT_TEMPLATE_NAME
       #   value: agenda_paciente_lembrete
+      # - key: WHATSAPP_PATIENT_TEMPLATE_PARAMETER_MODE
+      #   value: standard
       # - key: WHATSAPP_DOCTOR_TEMPLATE_NAME
       #   value: agenda_medico_resumo
+      # - key: WHATSAPP_VERIFY_TOKEN
+      #   sync: false
+      # - key: WHATSAPP_APP_SECRET
+      #   sync: false
 
   - type: cron
     name: agenda-medica-lembretes
@@ -102,8 +108,40 @@ services:
         value: pt_BR
       - key: WHATSAPP_PATIENT_TEMPLATE_NAME
         sync: false
+      - key: WHATSAPP_PATIENT_TEMPLATE_PARAMETER_MODE
+        value: standard
       - key: WHATSAPP_DOCTOR_TEMPLATE_NAME
         sync: false
+
+  - type: cron
+    name: agenda-medica-whatsapp-confirmacoes
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    dockerCommand: python -m backend.scripts.send_whatsapp_reminders
+    schedule: "*/10 * * * *"
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: agenda-medica-db
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: APP_TIMEZONE
+        value: "America/Sao_Paulo"
+      - key: WHATSAPP_ACCESS_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: WHATSAPP_API_VERSION
+        value: v20.0
+      - key: WHATSAPP_DEFAULT_COUNTRY_CODE
+        value: "55"
+      - key: WHATSAPP_TEMPLATE_LANGUAGE
+        value: pt_BR
+      - key: WHATSAPP_PATIENT_TEMPLATE_NAME
+        sync: false
+      - key: WHATSAPP_PATIENT_TEMPLATE_PARAMETER_MODE
+        value: standard
 
 databases:
   - name: agenda-medica-db

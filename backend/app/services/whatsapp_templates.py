@@ -28,6 +28,17 @@ class WhatsAppReminder:
     template_parameters: list[str]
 
 
+def patient_template_parameters(
+    reminder: WhatsAppReminder,
+    *,
+    rendered_body: str,
+    parameter_mode: str,
+) -> list[str]:
+    if parameter_mode.strip().lower() == "message":
+        return [rendered_body]
+    return reminder.template_parameters
+
+
 def _first_name(name: str | None) -> str:
     parts = (name or "").strip().split()
     return parts[0] if parts else "Paciente"

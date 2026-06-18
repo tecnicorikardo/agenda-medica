@@ -92,6 +92,8 @@ def _as_with_paciente(consulta) -> dict:
         "fim": consulta.fim,
         "status": consulta.status,
         "observacoes": consulta.observacoes,
+        "data_confirmacao": consulta.data_confirmacao,
+        "data_cancelamento": consulta.data_cancelamento,
         "created_at": consulta.created_at,
         "updated_at": consulta.updated_at,
         "paciente_nome": paciente.nome_completo if paciente else "",

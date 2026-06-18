@@ -32,6 +32,8 @@ class ConsultaUpdate(APIModel):
 
 class ConsultaOut(ConsultaBase):
     id: uuid.UUID
+    data_confirmacao: datetime | None = None
+    data_cancelamento: datetime | None = None
     created_at: datetime
     updated_at: datetime
 

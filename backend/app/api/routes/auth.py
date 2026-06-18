@@ -1,8 +1,6 @@
 from __future__ import annotations
 
 import base64
-import io
-import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, UploadFile, File, status
 from sqlalchemy.orm import Session
@@ -36,6 +34,7 @@ def _user_to_out(user) -> UsuarioOut:
         avatar_url=user.avatar_url,
         lembrete_ativo=user.lembrete_ativo if user.lembrete_ativo is not None else True,
         lembrete_dias=user.lembrete_dias if user.lembrete_dias else [1],
+        lembrete_horas=user.lembrete_horas if user.lembrete_horas else [24, 2],
         lembrete_msg_paciente=user.lembrete_msg_paciente,
         lembrete_msg_medico=user.lembrete_msg_medico,
         acesso_ate=billing.acesso_ate,
@@ -234,6 +233,7 @@ async def cadastro(request: Request, response: Response, db: Session = Depends(g
         ativo=True,
         lembrete_ativo=True,
         lembrete_dias=[1],
+        lembrete_horas=[24, 2],
     )
     db.add(user)
     db.commit()

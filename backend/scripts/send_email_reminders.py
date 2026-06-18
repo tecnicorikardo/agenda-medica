@@ -31,7 +31,6 @@ import argparse
 import asyncio
 import os
 import uuid
-from collections import defaultdict
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
@@ -80,7 +79,7 @@ async def _processar_medico(db, medico, consultas_do_dia: list, dias_antes: int)
     # Verifica se já enviou resumo do dia (usa consulta_id da primeira consulta como chave)
     primeira = consultas_do_dia[0]
     if _ja_enviado(db, primeira.id, canal="email_medico", dias_antes=dias_antes):
-        print(f"    [MÉDICO] Resumo já enviado hoje.")
+        print("    [MÉDICO] Resumo já enviado hoje.")
         return False
 
     clinic_name = medico.nome_clinica or "Agenda Médica"
@@ -139,71 +138,6 @@ async def _processar_medico(db, medico, consultas_do_dia: list, dias_antes: int)
         lembrete.status = "erro"
         lembrete.payload = {**lembrete.payload, "erro": str(exc)}
         print(f"❌ erro: {exc}")
-        return False
-
-
-async def _processar_whatsapp_paciente(db, medico, consulta, paciente, dias_antes: int) -> bool:
-    from backend.app.core.config import get_settings
-    from backend.app.models.reminder import Lembrete
-    from backend.app.services.whatsapp import normalize_whatsapp_phone, send_whatsapp_message
-    from backend.app.services.whatsapp_templates import lembrete_paciente_whatsapp
-
-    telefone = normalize_whatsapp_phone(paciente.telefone)
-    if not telefone:
-        print(f"    [WHATSAPP PACIENTE] {paciente.nome_completo} — telefone inválido.")
-        return False
-
-    if _ja_enviado(db, consulta.id, canal="whatsapp", dias_antes=dias_antes):
-        print(f"    [WHATSAPP PACIENTE] {paciente.nome_completo} — já enviado. Pulando.")
-        return False
-
-    settings = get_settings()
-    clinic_name = medico.nome_clinica or "Agenda Médica"
-    reminder = lembrete_paciente_whatsapp(
-        paciente_nome=paciente.nome_completo,
-        inicio=consulta.inicio,
-        clinic_name=clinic_name,
-        doctor_name=medico.nome,
-        msg_personalizada=medico.lembrete_msg_paciente,
-        tz=TZ,
-    )
-    hora = consulta.inicio.astimezone(TZ).strftime("%H:%M")
-    print(f"    [WHATSAPP PACIENTE] {hora} {paciente.nome_completo} <{telefone}>", end=" ", flush=True)
-
-    lembrete = Lembrete(
-        id=uuid.uuid4(),
-        consulta_id=consulta.id,
-        canal="whatsapp",
-        agendado_para=datetime.now(TZ),
-        status="pendente",
-        payload={
-            "telefone": telefone,
-            "dias_antes": dias_antes,
-            "data_consulta": consulta.inicio.astimezone(TZ).date().isoformat(),
-            "template": settings.whatsapp_patient_template_name or None,
-            "mensagem": reminder.body,
-        },
-    )
-    db.add(lembrete)
-    db.flush()
-
-    try:
-        result = await send_whatsapp_message(
-            to=telefone,
-            body=reminder.body,
-            template_name=settings.whatsapp_patient_template_name,
-            language_code=settings.whatsapp_template_language,
-            template_parameters=reminder.template_parameters,
-        )
-        lembrete.status = "enviado"
-        lembrete.enviado_em = datetime.now(TZ)
-        lembrete.payload = {**lembrete.payload, "message_id": result.message_id}
-        print("✅")
-        return True
-    except Exception as exc:
-        lembrete.status = "erro"
-        lembrete.payload = {**lembrete.payload, "erro": str(exc)}
-        print(f"❌ {exc}")
         return False
 
 
@@ -302,7 +236,6 @@ async def _processar(dias_antes: int) -> dict:
     stats = {
         "pacientes": 0,
         "medicos": 0,
-        "whatsapp_pacientes": 0,
         "whatsapp_medicos": 0,
         "erros": 0,
         "skip": 0,
@@ -312,7 +245,7 @@ async def _processar(dias_antes: int) -> dict:
         # Busca todos os médicos com lembrete ativo
         medicos = list(db.scalars(
             select(Usuario).where(
-                and_(Usuario.ativo == True, Usuario.lembrete_ativo == True)
+                and_(Usuario.ativo.is_(True), Usuario.lembrete_ativo.is_(True))
             )
         ).all())
 
@@ -417,11 +350,6 @@ async def _processar(dias_antes: int) -> dict:
                         stats["erros"] += 1
                         print(f"❌ {exc}")
 
-                if whatsapp_configurado:
-                    ok_whatsapp = await _processar_whatsapp_paciente(db, medico, c, paciente, dias_antes)
-                    if ok_whatsapp:
-                        stats["whatsapp_pacientes"] += 1
-
                 db.commit()
 
             # ── E-mail resumo para o MÉDICO ────────────────────────────────
@@ -460,23 +388,21 @@ async def _processar(dias_antes: int) -> dict:
 async def main(dias_list: list[int]) -> None:
     total_p = 0
     total_m = 0
-    total_wp = 0
     total_wm = 0
     for dias in sorted(set(dias_list)):
         print(f"\n📅 Lembretes para daqui {dias} dia(s)...")
         stats = await _processar(dias)
         total_p += stats["pacientes"]
         total_m += stats["medicos"]
-        total_wp += stats["whatsapp_pacientes"]
         total_wm += stats["whatsapp_medicos"]
         print(f"   E-mail pacientes: {stats['pacientes']} enviados, {stats['skip']} pulados, {stats['erros']} erros")
         print(f"   E-mail médicos:   {stats['medicos']} enviados")
-        print(f"   WhatsApp:         {stats['whatsapp_pacientes']} paciente(s), {stats['whatsapp_medicos']} médico(s)")
+        print(f"   WhatsApp médicos: {stats['whatsapp_medicos']} resumo(s)")
 
     print(
         "\n✅ Concluído — "
         f"{total_p} e-mail(s) para pacientes, {total_m} resumo(s) por e-mail para médicos, "
-        f"{total_wp} WhatsApp(s) para pacientes, {total_wm} resumo(s) por WhatsApp para médicos."
+        f"{total_wm} resumo(s) por WhatsApp para médicos."
     )
 
 
