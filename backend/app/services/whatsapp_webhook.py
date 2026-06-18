@@ -18,6 +18,7 @@ from backend.app.models.patient import Paciente
 from backend.app.models.reminder import Lembrete
 from backend.app.models.user import Usuario
 from backend.app.models.whatsapp_interaction import InteracaoWhatsApp
+from backend.app.services.appointment_notifications import send_appointment_push_notification
 from backend.app.services.whatsapp import normalize_whatsapp_phone, send_whatsapp_text
 from backend.app.services.whatsapp_content import (
     TemplateContext,
@@ -308,6 +309,12 @@ async def _process_message_event(db: Session, event: dict) -> None:
     interaction.processado_em = now
     db.add(appointment)
     db.commit()
+    send_appointment_push_notification(
+        appointment_id=appointment.id,
+        event="status_changed",
+        changed_fields=("status",),
+        source="whatsapp",
+    )
     await _send_status_response(
         db,
         interaction=interaction,

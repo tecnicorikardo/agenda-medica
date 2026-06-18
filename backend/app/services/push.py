@@ -52,8 +52,8 @@ def send_push(
         )
         return True
     except WebPushException as exc:
-        # 410 Gone = subscription expirada, deve ser removida
-        if exc.response is not None and exc.response.status_code == 410:
+        # 404/410 indicam subscription removida ou expirada.
+        if exc.response is not None and exc.response.status_code in {404, 410}:
             raise
         logger.error("Falha no push: %s", exc)
         return False
@@ -92,7 +92,7 @@ def send_push_to_subscriptions(
             )
             if ok:
                 enviados += 1
-        except Exception as exc:
+        except Exception:
             # Subscription expirada — marca para remover
             logger.info("Removendo subscription expirada: %s", sub.endpoint[:60])
             to_delete.append(sub)

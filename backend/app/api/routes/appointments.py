@@ -20,6 +20,10 @@ from backend.app.crud.appointments import (
 )
 from backend.app.db.session import get_db
 from backend.app.schemas.appointment import ConsultaCreate, ConsultaUpdate, ConsultaWithPaciente
+from backend.app.services.appointment_notifications import (
+    classify_appointment_event,
+    send_appointment_push_notification,
+)
 from backend.app.utils.deps import get_current_user
 
 router = APIRouter()
@@ -152,6 +156,11 @@ def create_(
         raise HTTPException(status_code=404, detail="Paciente não encontrado")
     try:
         consulta = create(db, usuario_id=user.id, data=data)
+        background_tasks.add_task(
+            send_appointment_push_notification,
+            appointment_id=consulta.id,
+            event="created",
+        )
         if patient.email:
             background_tasks.add_task(
                 _enviar_confirmacao_agendamento,
@@ -173,6 +182,7 @@ def create_(
 def update_(
     consulta_id,
     data: ConsultaUpdate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
 ) -> ConsultaWithPaciente:
@@ -182,7 +192,22 @@ def update_(
     if consulta.usuario_id != user.id:
         raise HTTPException(status_code=404, detail="Consulta não encontrada")
     try:
+        fields = data.model_fields_set
+        previous_values = {field: getattr(consulta, field) for field in fields}
         consulta = update(db, usuario_id=user.id, consulta=consulta, data=data)
+        changed_fields = {
+            field
+            for field, previous_value in previous_values.items()
+            if previous_value != getattr(consulta, field)
+        }
+        event = classify_appointment_event(changed_fields)
+        if event:
+            background_tasks.add_task(
+                send_appointment_push_notification,
+                appointment_id=consulta.id,
+                event=event,
+                changed_fields=tuple(sorted(changed_fields)),
+            )
         return _as_with_paciente(consulta)
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
@@ -192,6 +217,7 @@ def update_(
 async def cancel_(
     consulta_id,
     request: Request,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
 ) -> ConsultaWithPaciente:
@@ -206,7 +232,16 @@ async def cancel_(
         motivo = (body.get("motivo") or "").strip() or None
     except Exception:
         motivo = None
+    previous_status = consulta.status
+    previous_observations = consulta.observacoes
     consulta = cancel(db, consulta, motivo=motivo)
+    if previous_status != consulta.status or previous_observations != consulta.observacoes:
+        background_tasks.add_task(
+            send_appointment_push_notification,
+            appointment_id=consulta.id,
+            event="status_changed",
+            changed_fields=("status",),
+        )
     return _as_with_paciente(consulta)
 
 
@@ -214,6 +249,7 @@ async def cancel_(
 def set_status(
     consulta_id,
     status_name: str,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
 ) -> ConsultaWithPaciente:
@@ -224,5 +260,13 @@ def set_status(
         raise HTTPException(status_code=404, detail="Consulta não encontrada")
     if consulta.usuario_id != user.id:
         raise HTTPException(status_code=404, detail="Consulta não encontrada")
+    previous_status = consulta.status
     consulta = mark_status(db, consulta, status_name)
+    if previous_status != consulta.status:
+        background_tasks.add_task(
+            send_appointment_push_notification,
+            appointment_id=consulta.id,
+            event="status_changed",
+            changed_fields=("status",),
+        )
     return _as_with_paciente(consulta)
