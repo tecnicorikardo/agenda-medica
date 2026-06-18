@@ -3021,6 +3021,7 @@ async function perfilPage() {
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.getSubscription();
       if (sub) {
+        await subscribePush(reg);
         pushStatus.className = "push-status push-ok";
         pushStatus.innerHTML = "✅ <strong>Notificações ativas</strong> neste dispositivo.";
         btnAtivarPush.style.display = "none";
@@ -3056,7 +3057,13 @@ async function perfilPage() {
     btnTestarPush.textContent = "Enviando...";
     try {
       const r = await api("/push/test", { method: "POST", body: "{}" });
-      toast(r.enviados > 0 ? "📨 Notificação enviada! Verifique seu dispositivo." : "Nenhum dispositivo inscrito.");
+      if (!r.configured) {
+        toast("Servidor push ainda não configurado. Adicione as chaves VAPID no Render.");
+      } else if (!r.subscriptions) {
+        toast("Este dispositivo ainda não está inscrito. Reabra o Perfil para sincronizar.");
+      } else {
+        toast(r.enviados > 0 ? "📨 Notificação enviada! Verifique seu dispositivo." : "A inscrição existe, mas o envio falhou. Consulte os logs.");
+      }
     } catch (err) {
       toast(err.message);
     } finally {

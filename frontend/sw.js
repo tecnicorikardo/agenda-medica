@@ -1,5 +1,5 @@
 /* Service Worker — Agenda Médica */
-const CACHE = "agenda-v9";
+const CACHE = "agenda-v10";
 const PRECACHE = ["/", "/app.js", "/app.css", "/manifest.json", "/icons/icon-192.png"];
 const NETWORK_FIRST_ASSETS = new Set(["/app.js", "/app.css"]);
 

@@ -11,7 +11,7 @@ from backend.app.core.config import get_settings
 logger = logging.getLogger(__name__)
 
 
-def _is_configured() -> bool:
+def is_push_configured() -> bool:
     s = get_settings()
     return bool(s.vapid_public_key and s.vapid_private_key)
 
@@ -29,7 +29,7 @@ def send_push(
     tag: str = "agenda-medica",
 ) -> bool:
     """Envia uma notificação push. Retorna True se enviado."""
-    if not _is_configured():
+    if not is_push_configured():
         logger.warning("VAPID não configurado — push não enviado.")
         return False
 

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Request
 from sqlalchemy.orm import Session
-from sqlalchemy import select, delete
+from sqlalchemy import delete, func, select
 
 from backend.app.core.config import get_settings
 from backend.app.db.session import get_db
@@ -83,7 +83,23 @@ def test_push(
     user=Depends(get_current_user),
 ) -> dict:
     """Envia uma notificação de teste para o usuário logado."""
-    from backend.app.services.push import send_push_to_subscriptions
+    from backend.app.services.push import is_push_configured, send_push_to_subscriptions
+
+    subscriptions = db.scalar(
+        select(func.count())
+        .select_from(PushSubscription)
+        .where(PushSubscription.usuario_id == user.id)
+    ) or 0
+    configured = is_push_configured()
+    if not configured:
+        return {
+            "ok": False,
+            "configured": False,
+            "subscriptions": subscriptions,
+            "enviados": 0,
+            "detail": "Configure VAPID_PUBLIC_KEY e VAPID_PRIVATE_KEY no servidor.",
+        }
+
     n = send_push_to_subscriptions(
         db,
         usuario_id=user.id,
@@ -92,4 +108,9 @@ def test_push(
         url="/",
         tag="test",
     )
-    return {"ok": True, "enviados": n}
+    return {
+        "ok": n > 0,
+        "configured": True,
+        "subscriptions": subscriptions,
+        "enviados": n,
+    }
