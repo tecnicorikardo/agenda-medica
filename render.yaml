@@ -30,44 +30,40 @@ services:
       # Mercado Pago (preencha manualmente no dashboard do Render)
       # - key: MERCADOPAGO_ACCESS_TOKEN
       #   value: APP_USR-...
-      # E-mail (preencha manualmente no dashboard do Render)
-      # - key: SMTP_HOST
-      #   value: smtp.gmail.com
-      # - key: SMTP_PORT
-      #   value: "587"
-      # - key: SMTP_USE_TLS
-      #   value: "true"
-      # - key: SMTP_USER
-      #   value: seu@gmail.com
-      # - key: SMTP_PASSWORD
-      #   value: sua-senha-de-app
-      # - key: SMTP_FROM_EMAIL
-      #   value: seu@gmail.com
-      # - key: SMTP_FROM_NAME
-      #   value: Agenda Médica
-      # WhatsApp Cloud API (preencha manualmente no dashboard do Render)
-      # - key: WHATSAPP_ACCESS_TOKEN
-      #   value: EA...
-      # - key: WHATSAPP_PHONE_NUMBER_ID
-      #   value: "1234567890"
-      # - key: WHATSAPP_BUSINESS_ACCOUNT_ID
-      #   value: "1234567890"
-      # - key: WHATSAPP_API_VERSION
-      #   value: v20.0
-      # - key: WHATSAPP_TEMPLATE_LANGUAGE
-      #   value: pt_BR
-      # - key: WHATSAPP_PATIENT_TEMPLATE_NAME
-      #   value: agenda_paciente_lembrete
-      # - key: WHATSAPP_PATIENT_TEMPLATE_PARAMETER_MODE
-      #   value: standard
-      # - key: WHATSAPP_PATIENT_TEMPLATE_QUICK_REPLY_COUNT
-      #   value: "0"
-      # - key: WHATSAPP_DOCTOR_TEMPLATE_NAME
-      #   value: agenda_medico_resumo
-      # - key: WHATSAPP_VERIFY_TOKEN
-      #   sync: false
-      # - key: WHATSAPP_APP_SECRET
-      #   sync: false
+      # WhatsApp Cloud API (configurações atualizadas)
+      - key: WHATSAPP_ACCESS_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        value: "1092534873945633"
+      - key: WHATSAPP_API_VERSION
+        value: v20.0
+      - key: WHATSAPP_DEFAULT_COUNTRY_CODE
+        value: "55"
+      - key: WHATSAPP_TEMPLATE_LANGUAGE
+        value: pt_BR
+      - key: WHATSAPP_PATIENT_TEMPLATE_NAME
+        value: agenda_paciente_h
+      - key: WHATSAPP_PATIENT_TEMPLATE_PARAMETER_MODE
+        value: standard
+      - key: WHATSAPP_PATIENT_TEMPLATE_QUICK_REPLY_COUNT
+        value: "0"
+      - key: WHATSAPP_DOCTOR_TEMPLATE_NAME
+        value: agenda_medico_re
+      # E-mail SMTP (configurações atualizadas)
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USE_TLS
+        value: "true"
+      - key: SMTP_USER
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: SMTP_FROM_EMAIL
+        sync: false
+      - key: SMTP_FROM_NAME
+        value: Agenda Médica
 
   - type: cron
     name: agenda-medica-lembretes
