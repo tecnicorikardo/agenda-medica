@@ -171,14 +171,6 @@ async def send_whatsapp_template(
     
     return await _post_message(payload)
 
-    return await _post_message({
-        "messaging_product": "whatsapp",
-        "recipient_type": "individual",
-        "to": phone,
-        "type": "template",
-        "template": template,
-    })
-
 
 async def send_whatsapp_message(
     *,
