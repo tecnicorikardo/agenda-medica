@@ -97,9 +97,16 @@ def lembrete_paciente_whatsapp(
         "medico": medico,
     }
     body = _render(msg_personalizada or DEFAULT_PATIENT_MESSAGE, values)
+    
+    # Log para debug
+    import logging
+    logger = logging.getLogger(__name__)
+    params = [primeiro_nome, data, hora, clinic_name, medico]
+    logger.info(f"WhatsApp patient template params: {params}")
+    
     return WhatsAppReminder(
         body=body,
-        template_parameters=[primeiro_nome, data, hora, clinic_name, medico],
+        template_parameters=params,
     )
 
 

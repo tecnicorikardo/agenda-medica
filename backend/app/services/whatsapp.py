@@ -157,6 +157,23 @@ async def send_whatsapp_template(
     if components:
         template["components"] = components
 
+    payload = {
+        "messaging_product": "whatsapp",
+        "recipient_type": "individual",
+        "to": phone,
+        "type": "template",
+        "template": template,
+    }
+    
+    # Log detalhado para debug
+    logger.info(f"WhatsApp template payload: template={template_name}, language={language_code}, params={len(body_parameters or [])}, buttons={len(quick_reply_payloads or [])}")
+    logger.debug(f"WhatsApp full payload: {payload}")
+    
+    return await _post_message(payload)
+        })
+    if components:
+        template["components"] = components
+
     return await _post_message({
         "messaging_product": "whatsapp",
         "recipient_type": "individual",
