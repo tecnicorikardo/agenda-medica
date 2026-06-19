@@ -165,9 +165,11 @@ async def send_whatsapp_template(
         "template": template,
     }
     
-    # Log detalhado para debug
-    logger.info(f"WhatsApp template payload: template={template_name}, language={language_code}, params={len(body_parameters or [])}, buttons={len(quick_reply_payloads or [])}")
-    logger.debug(f"WhatsApp full payload: {payload}")
+    # Log detalhado para debug - usando print e warning para garantir visibilidade
+    print(f"[WHATSAPP DEBUG] Template: {template_name}, Language: {language_code}, Params: {len(body_parameters or [])}, Buttons: {len(quick_reply_payloads or [])}")
+    print(f"[WHATSAPP DEBUG] Body parameters: {body_parameters}")
+    logger.warning(f"[WHATSAPP DEBUG] Sending template: {template_name} to {phone}")
+    logger.warning(f"[WHATSAPP DEBUG] Full payload: {payload}")
     
     return await _post_message(payload)
 

@@ -102,7 +102,8 @@ def lembrete_paciente_whatsapp(
     import logging
     logger = logging.getLogger(__name__)
     params = [primeiro_nome, data, hora, clinic_name, medico]
-    logger.info(f"WhatsApp patient template params: {params}")
+    print(f"[WHATSAPP DEBUG] Patient template params: {params}")
+    logger.warning(f"[WHATSAPP DEBUG] Patient template params: {params}")
     
     return WhatsAppReminder(
         body=body,
