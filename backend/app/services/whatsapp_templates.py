@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from datetime import datetime
+from uuid import UUID
 from zoneinfo import ZoneInfo
 
 
@@ -34,9 +35,28 @@ def patient_template_parameters(
     rendered_body: str,
     parameter_mode: str,
 ) -> list[str]:
-    if parameter_mode.strip().lower() == "message":
+    normalized_mode = parameter_mode.strip().lower()
+    if normalized_mode == "message":
         return [rendered_body]
-    return reminder.template_parameters
+    if normalized_mode in {"standard", "standart"}:
+        return reminder.template_parameters
+    raise ValueError(
+        "WHATSAPP_PATIENT_TEMPLATE_PARAMETER_MODE deve ser 'standard' ou 'message'."
+    )
+
+
+def patient_quick_reply_payloads(
+    appointment_id: UUID,
+    *,
+    quick_reply_count: int,
+) -> list[str]:
+    payloads = [
+        f"confirmar:{appointment_id}",
+        f"cancelar:{appointment_id}",
+    ]
+    if quick_reply_count < 0 or quick_reply_count > len(payloads):
+        raise ValueError("O template de paciente suporta entre 0 e 2 quick replies.")
+    return payloads[:quick_reply_count]
 
 
 def _first_name(name: str | None) -> str:

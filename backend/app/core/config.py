@@ -59,6 +59,12 @@ class Settings(BaseSettings):
         default="standard",
         alias="WHATSAPP_PATIENT_TEMPLATE_PARAMETER_MODE",
     )
+    whatsapp_patient_template_quick_reply_count: int = Field(
+        default=0,
+        ge=0,
+        le=2,
+        alias="WHATSAPP_PATIENT_TEMPLATE_QUICK_REPLY_COUNT",
+    )
     whatsapp_verify_token: str = Field(default="", alias="WHATSAPP_VERIFY_TOKEN")
     whatsapp_app_secret: str = Field(default="", alias="WHATSAPP_APP_SECRET")
 

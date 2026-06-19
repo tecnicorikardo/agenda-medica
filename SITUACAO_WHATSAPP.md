@@ -44,8 +44,15 @@ WHATSAPP_BUSINESS_ACCOUNT_ID=id_da_conta_whatsapp_business
 WHATSAPP_API_VERSION=v20.0
 WHATSAPP_TEMPLATE_LANGUAGE=pt_BR
 WHATSAPP_PATIENT_TEMPLATE_NAME=nome_do_template_paciente
+WHATSAPP_PATIENT_TEMPLATE_PARAMETER_MODE=standard
+WHATSAPP_PATIENT_TEMPLATE_QUICK_REPLY_COUNT=0
 WHATSAPP_DOCTOR_TEMPLATE_NAME=nome_do_template_medico
 ```
+
+`WHATSAPP_PATIENT_TEMPLATE_QUICK_REPLY_COUNT` deve corresponder exatamente ao
+template aprovado. Use `0` para o template atual `agenda_paciente_lembrete`,
+que não possui botões. Use `2` somente após aprovar um template com os botões
+quick reply “Confirmar Consulta” e “Cancelar Consulta”, nesta ordem.
 
 Também configure no Cron Job as mesmas credenciais de e-mail usadas no Web Service.
 
@@ -67,6 +74,7 @@ O verificador confirma:
 - se `WHATSAPP_BUSINESS_ACCOUNT_ID` lista templates corretamente;
 - se os templates configurados existem no idioma `pt_BR`;
 - se estão `APPROVED`, `PENDING` ou `REJECTED`.
+- se a quantidade de parâmetros do corpo e de botões corresponde à configuração.
 
 Status esperado para envio automático:
 

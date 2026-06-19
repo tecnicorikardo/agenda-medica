@@ -12,8 +12,10 @@ from backend.app.services.whatsapp_content import (
     render_template,
     validate_template_content,
 )
+from backend.app.services.whatsapp import _extract_error
 from backend.app.services.whatsapp_templates import (
     WhatsAppReminder,
+    patient_quick_reply_payloads,
     patient_template_parameters,
 )
 from backend.app.services.whatsapp_webhook import (
@@ -24,6 +26,17 @@ from backend.app.services.whatsapp_webhook import (
 
 
 class WhatsAppContentTests(unittest.TestCase):
+    def test_whatsapp_parameter_error_includes_meta_details(self) -> None:
+        body = (
+            '{"error":{"message":"There’s an issue with the parameters in your template",'
+            '"code":132018,"error_data":{"details":"button at index 0 not found"}}}'
+        )
+
+        error = _extract_error(400, body)
+
+        self.assertIn("132018", error)
+        self.assertIn("button at index 0 not found", error)
+
     def test_render_supported_variables(self) -> None:
         context = TemplateContext(
             paciente="Maria",
@@ -68,6 +81,35 @@ class WhatsAppContentTests(unittest.TestCase):
             ),
             ["Maria", "20/06/2026"],
         )
+
+    def test_patient_template_without_buttons_sends_no_quick_replies(self) -> None:
+        appointment_id = uuid4()
+
+        self.assertEqual(
+            patient_quick_reply_payloads(appointment_id, quick_reply_count=0),
+            [],
+        )
+
+    def test_patient_template_with_two_buttons_maps_payloads_in_order(self) -> None:
+        appointment_id = uuid4()
+
+        self.assertEqual(
+            patient_quick_reply_payloads(appointment_id, quick_reply_count=2),
+            [
+                f"confirmar:{appointment_id}",
+                f"cancelar:{appointment_id}",
+            ],
+        )
+
+    def test_rejects_unsupported_patient_parameter_mode(self) -> None:
+        reminder = WhatsAppReminder(body="Mensagem", template_parameters=["Maria"])
+
+        with self.assertRaisesRegex(ValueError, "deve ser 'standard' ou 'message'"):
+            patient_template_parameters(
+                reminder,
+                rendered_body="Mensagem",
+                parameter_mode="unknown",
+            )
 
 
 class WhatsAppWebhookTests(unittest.TestCase):

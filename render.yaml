@@ -60,6 +60,8 @@ services:
       #   value: agenda_paciente_lembrete
       # - key: WHATSAPP_PATIENT_TEMPLATE_PARAMETER_MODE
       #   value: standard
+      # - key: WHATSAPP_PATIENT_TEMPLATE_QUICK_REPLY_COUNT
+      #   value: "0"
       # - key: WHATSAPP_DOCTOR_TEMPLATE_NAME
       #   value: agenda_medico_resumo
       # - key: WHATSAPP_VERIFY_TOKEN
@@ -124,6 +126,8 @@ services:
         sync: false
       - key: WHATSAPP_PATIENT_TEMPLATE_PARAMETER_MODE
         value: standard
+      - key: WHATSAPP_PATIENT_TEMPLATE_QUICK_REPLY_COUNT
+        value: "0"
       - key: WHATSAPP_DOCTOR_TEMPLATE_NAME
         sync: false
 
@@ -156,6 +160,8 @@ services:
         sync: false
       - key: WHATSAPP_PATIENT_TEMPLATE_PARAMETER_MODE
         value: standard
+      - key: WHATSAPP_PATIENT_TEMPLATE_QUICK_REPLY_COUNT
+        value: "0"
 
 databases:
   - name: agenda-medica-db

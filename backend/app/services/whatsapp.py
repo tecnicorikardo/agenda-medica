@@ -64,10 +64,13 @@ def _extract_error(status: int, body: str) -> str:
     error = data.get("error") if isinstance(data, dict) else None
     if isinstance(error, dict):
         message = error.get("message") or error.get("error_user_msg")
+        error_data = error.get("error_data")
+        parameter_details = error_data.get("details") if isinstance(error_data, dict) else None
         code = error.get("code")
         details = f" ({code})" if code else ""
         if message:
-            return f"WhatsApp Cloud API erro {status}{details}: {message}"
+            suffix = f" Detalhes: {parameter_details}" if parameter_details else ""
+            return f"WhatsApp Cloud API erro {status}{details}: {message}{suffix}"
     return f"WhatsApp Cloud API erro {status}: {data}"
 
 

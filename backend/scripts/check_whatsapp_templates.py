@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 from typing import Any
 
 import aiohttp
@@ -77,12 +78,32 @@ def _body_preview(template: dict[str, Any]) -> str:
     return ""
 
 
+def _template_shape(template: dict[str, Any]) -> tuple[int, int]:
+    body_parameter_indexes: set[int] = set()
+    quick_reply_count = 0
+    for component in template.get("components", []):
+        component_type = component.get("type")
+        if component_type == "BODY":
+            body_parameter_indexes.update(
+                int(index)
+                for index in re.findall(r"\{\{(\d+)\}\}", component.get("text") or "")
+            )
+        elif component_type == "BUTTONS":
+            quick_reply_count += sum(
+                button.get("type") == "QUICK_REPLY"
+                for button in component.get("buttons", [])
+            )
+    return len(body_parameter_indexes), quick_reply_count
+
+
 def _validate_configured_template(
     *,
     label: str,
     name: str,
     language: str,
     templates: list[dict[str, Any]],
+    expected_body_parameters: int,
+    expected_quick_replies: int,
 ) -> None:
     if not name:
         print(f"AVISO: {label} sem template configurado.")
@@ -102,6 +123,17 @@ def _validate_configured_template(
     approved = [t for t in language_matches if t.get("status") == "APPROVED"]
     if approved:
         print(f"OK: {label} '{name}' aprovado em {language}.")
+        body_parameters, quick_replies = _template_shape(approved[0])
+        if body_parameters != expected_body_parameters:
+            print(
+                f"ERRO: {label} espera {expected_body_parameters} parâmetro(s) no BODY, "
+                f"mas o template aprovado possui {body_parameters}."
+            )
+        if quick_replies != expected_quick_replies:
+            print(
+                f"ERRO: {label} está configurado para {expected_quick_replies} quick reply(s), "
+                f"mas o template aprovado possui {quick_replies}."
+            )
         return
 
     statuses = ", ".join(sorted({str(t.get("status")) for t in language_matches}))
@@ -121,6 +153,12 @@ async def check_templates() -> None:
     language = (os.environ.get("WHATSAPP_TEMPLATE_LANGUAGE") or "pt_BR").strip()
     patient_template = (os.environ.get("WHATSAPP_PATIENT_TEMPLATE_NAME") or "").strip()
     doctor_template = (os.environ.get("WHATSAPP_DOCTOR_TEMPLATE_NAME") or "").strip()
+    patient_parameter_mode = (
+        os.environ.get("WHATSAPP_PATIENT_TEMPLATE_PARAMETER_MODE") or "standard"
+    ).strip().lower()
+    patient_quick_reply_count = int(
+        os.environ.get("WHATSAPP_PATIENT_TEMPLATE_QUICK_REPLY_COUNT") or "0"
+    )
     headers = {"Authorization": f"Bearer {access_token}"}
 
     async with aiohttp.ClientSession() as session:
@@ -158,6 +196,8 @@ async def check_templates() -> None:
         preview = _body_preview(template)
         if preview:
             print(f"   Conteúdo:  {preview}...")
+        body_parameters, quick_replies = _template_shape(template)
+        print(f"   Parâmetros: BODY={body_parameters} / quick replies={quick_replies}")
         print()
 
     print("Configuração atual:")
@@ -165,6 +205,8 @@ async def check_templates() -> None:
     print(f"   WHATSAPP_PHONE_NUMBER_ID:     {phone_number_id}")
     print(f"   WHATSAPP_TEMPLATE_LANGUAGE:   {language}")
     print(f"   WHATSAPP_PATIENT_TEMPLATE:    {patient_template or '-'}")
+    print(f"   WHATSAPP_PATIENT_PARAMETER_MODE: {patient_parameter_mode}")
+    print(f"   WHATSAPP_PATIENT_QUICK_REPLIES:  {patient_quick_reply_count}")
     print(f"   WHATSAPP_DOCTOR_TEMPLATE:     {doctor_template or '-'}")
 
     print("\nValidação:")
@@ -173,12 +215,16 @@ async def check_templates() -> None:
         name=patient_template,
         language=language,
         templates=templates,
+        expected_body_parameters=1 if patient_parameter_mode == "message" else 5,
+        expected_quick_replies=patient_quick_reply_count,
     )
     _validate_configured_template(
         label="Médico",
         name=doctor_template,
         language=language,
         templates=templates,
+        expected_body_parameters=5,
+        expected_quick_replies=0,
     )
 
 

@@ -26,6 +26,7 @@ from backend.app.services.whatsapp_content import (
 )
 from backend.app.services.whatsapp_templates import (
     lembrete_paciente_whatsapp,
+    patient_quick_reply_payloads,
     patient_template_parameters,
 )
 
@@ -111,10 +112,10 @@ async def _send_confirmation_reminder(
                 rendered_body=body,
                 parameter_mode=settings.whatsapp_patient_template_parameter_mode,
             ),
-            quick_reply_payloads=[
-                f"confirmar:{consulta.id}",
-                f"cancelar:{consulta.id}",
-            ],
+            quick_reply_payloads=patient_quick_reply_payloads(
+                consulta.id,
+                quick_reply_count=settings.whatsapp_patient_template_quick_reply_count,
+            ),
         )
         now = datetime.now(timezone)
         reminder.status = "enviado"

@@ -20,6 +20,7 @@ from backend.app.services.whatsapp import (
 from backend.app.services.whatsapp_templates import (
     lembrete_medico_whatsapp,
     lembrete_paciente_whatsapp,
+    patient_quick_reply_payloads,
     patient_template_parameters,
 )
 from backend.app.utils.deps import get_current_user
@@ -183,10 +184,10 @@ async def test_whatsapp(
                         rendered_body=reminder.body,
                         parameter_mode=settings.whatsapp_patient_template_parameter_mode,
                     ),
-                    quick_reply_payloads=[
-                        f"confirmar:{proxima.id}",
-                        f"cancelar:{proxima.id}",
-                    ],
+                    quick_reply_payloads=patient_quick_reply_payloads(
+                        proxima.id,
+                        quick_reply_count=settings.whatsapp_patient_template_quick_reply_count,
+                    ),
                 )
                 resultados["paciente"] = {
                     "ok": True,
