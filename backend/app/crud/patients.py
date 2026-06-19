@@ -1,9 +1,12 @@
 from __future__ import annotations
 
-from sqlalchemy import or_, select
+from datetime import datetime, timezone
+
+from sqlalchemy import and_, case, func, or_, select
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 
+from backend.app.models.appointment import Consulta
 from backend.app.models.patient import Paciente
 from backend.app.schemas.patient import PacienteCreate, PacienteUpdate
 
@@ -28,6 +31,54 @@ def list_patients(db: Session, *, usuario_id, search: str | None, limit: int = 5
     else:
         stmt = stmt.limit(limit)
     return list(db.scalars(stmt).all())
+
+
+def get_patient_activity(
+    db: Session,
+    *,
+    usuario_id,
+    patient_ids: list,
+) -> dict:
+    if not patient_ids:
+        return {}
+
+    now = datetime.now(timezone.utc)
+    rows = db.execute(
+        select(
+            Consulta.paciente_id,
+            func.max(
+                case(
+                    (Consulta.status == "concluida", Consulta.inicio),
+                    else_=None,
+                )
+            ).label("ultimo_atendimento"),
+            func.max(
+                case(
+                    (
+                        and_(
+                            Consulta.status.in_(["agendada", "confirmada"]),
+                            Consulta.inicio >= now,
+                        ),
+                        1,
+                    ),
+                    else_=0,
+                )
+            ).label("tem_pendencia"),
+        )
+        .where(
+            Consulta.usuario_id == usuario_id,
+            Consulta.paciente_id.in_(patient_ids),
+        )
+        .group_by(Consulta.paciente_id)
+    ).all()
+
+    return {
+        row.paciente_id: {
+            "ultimo_atendimento": row.ultimo_atendimento,
+            "tem_pendencia": bool(row.tem_pendencia),
+        }
+        for row in rows
+    }
 
 
 def get_patient(db: Session, patient_id) -> Paciente | None:

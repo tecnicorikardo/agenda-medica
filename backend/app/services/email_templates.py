@@ -291,7 +291,6 @@ def lembrete_medico_html(
     """Retorna (subject, html) do resumo diário para o médico."""
     data_str = _fmt_date_br(data_consultas)
     hora_str = _fmt_hora(inicio_foco)
-    nome_medico = doctor_name or "Médico(a)"
     subject = f"📅 Agenda do dia {data_str} — {total_dia} consulta(s) — {clinic_name}"
     doctor_line = f"Dr(a). {doctor_name}" if doctor_name else clinic_name
 

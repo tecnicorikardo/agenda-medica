@@ -841,6 +841,20 @@ function topbar(active) {
   });
   itemPerfil.innerHTML = `${svgSettings} <span>Meu Perfil</span>`;
 
+  const itemInstalar = h("button", {
+    class: "dropdown-item pwa-install-menu-item",
+    type: "button",
+    role: "menuitem",
+    style: _deferredInstall ? "" : "display:none",
+    onclick: async () => {
+      dropMenu.style.display = "none";
+      await promptPwaInstall();
+    },
+  }, [
+    h("span", { class: "dropdown-item-emoji", "aria-hidden": "true" }, ["⬇️"]),
+    h("span", {}, ["Instalar aplicativo"]),
+  ]);
+
   // Item: Sair
   const itemSair = h("button", {
     class: "dropdown-item danger-item",
@@ -856,7 +870,7 @@ function topbar(active) {
   });
   itemSair.innerHTML = `${svgLogout} <span>Sair</span>`;
 
-  dropMenu.append(itemPerfil, itemSair);
+  dropMenu.append(itemPerfil, itemInstalar, itemSair);
 
   // Botão trigger — usa o avatar do usuário
   const triggerAvatar = u.avatar_url
@@ -1244,12 +1258,30 @@ async function ensureMe() {
   }
 }
 
-function kpiCard(title, value, sub) {
-  return h("div", { class: "card col-4" }, [
-    h("h2", {}, [title]),
+function kpiCard(title, value, sub, { icon, tone = "info" } = {}) {
+  return h("div", { class: `card col-4 kpi-card kpi-${tone}` }, [
+    h("div", { class: "kpi-header" }, [
+      h("h2", {}, [title]),
+      icon ? h("span", { class: "kpi-icon", "aria-hidden": "true" }, [icon]) : null,
+    ]),
     h("div", { class: "kpi" }, [value]),
     h("div", { class: "sub" }, [sub]),
   ]);
+}
+
+function groupAvailableSlots(slots) {
+  const periods = [
+    { label: "Manhã", icon: "☀️", test: (hour) => hour < 12 },
+    { label: "Tarde", icon: "🌤️", test: (hour) => hour >= 12 && hour < 18 },
+    { label: "Noite", icon: "🌙", test: (hour) => hour >= 18 },
+  ];
+
+  return periods
+    .map((period) => ({
+      ...period,
+      slots: slots.filter((slot) => period.test(new Date(slot.inicio).getHours())),
+    }))
+    .filter((period) => period.slots.length);
 }
 
 function modal(content) {
@@ -1306,9 +1338,9 @@ async function dashboardPage() {
       ]),
       // KPIs
       h("div", { class: "grid cards" }, [
-        kpiCard("Hoje", data.consultas_do_dia, "consultas agendadas"),
-        kpiCard("Canceladas", data.consultas_canceladas, "neste período"),
-        kpiCard("Concluídas", data.atendimentos_concluidos, "atendimentos"),
+        kpiCard("Hoje", data.consultas_do_dia, "consultas agendadas", { icon: "📅", tone: "info" }),
+        kpiCard("Canceladas", data.consultas_canceladas, "neste período", { icon: "✕", tone: "danger" }),
+        kpiCard("Concluídas", data.atendimentos_concluidos, "atendimentos", { icon: "✓", tone: "success" }),
         // Próximo paciente
         h("div", { class: "card col-12" }, [
           h("div", { class: "card-label-row" }, ["Próximo paciente"]),
@@ -1321,17 +1353,34 @@ async function dashboardPage() {
                 h("div", { class: "spacer" }),
                 statusBadge(next.status),
               ])
-            : h("div", { class: "muted" }, ["Nenhuma consulta futura hoje."]),
+            : h("div", { class: "dashboard-empty-state" }, [
+                h("div", { class: "dashboard-empty-icon", "aria-hidden": "true" }, ["📆"]),
+                h("div", {}, [
+                  h("div", { class: "dashboard-empty-title" }, ["Nenhuma consulta futura hoje"]),
+                  h("div", { class: "sub" }, ["Aproveite o horário livre ou adicione um novo atendimento."]),
+                ]),
+                h("div", { class: "spacer" }),
+                h("a", { class: "btn primary", href: `#/agenda?dia=${day}` }, ["+ Agendar nova consulta"]),
+              ]),
         ]),
         // Slots livres
         data.horarios_livres?.length
           ? h("div", { class: "card col-12" }, [
               h("div", { class: "card-label-row" }, ["Horários livres"]),
-              h("div", { class: "row" }, data.horarios_livres.map((s) =>
-                h("a", {
-                  class: "btn slot-btn",
-                  href: `#/agenda?dia=${day}&slot=${encodeURIComponent(s.inicio)}`,
-                }, [formatTime(s.inicio)])
+              h("div", { class: "dashboard-slot-groups" }, groupAvailableSlots(data.horarios_livres).map((period) =>
+                h("div", { class: "dashboard-slot-group" }, [
+                  h("div", { class: "dashboard-slot-period" }, [
+                    h("span", { "aria-hidden": "true" }, [period.icon]),
+                    h("span", {}, [period.label]),
+                    h("span", { class: "dashboard-slot-count" }, [period.slots.length]),
+                  ]),
+                  h("div", { class: "dashboard-slot-grid" }, period.slots.map((slot) =>
+                    h("a", {
+                      class: "btn slot-btn",
+                      href: `#/agenda?dia=${day}&slot=${encodeURIComponent(slot.inicio)}`,
+                    }, [formatTime(slot.inicio)])
+                  )),
+                ])
               )),
             ])
           : null,
@@ -2274,58 +2323,183 @@ async function pacientesPage() {
   const list = h("div", { class: "card" }, ["Carregando..."]);
   const fileImport = h("input", { type: "file", accept: ".xlsx", style: "display:none" });
   const importStatus = h("div", { class: "import-status", style: "display:none" });
+  const sortSelect = h("select", { class: "input patients-sort", "aria-label": "Ordenar pacientes" }, [
+    h("option", { value: "nome" }, ["Nome (A–Z)"]),
+    h("option", { value: "recentes" }, ["Atendimento mais recente"]),
+    h("option", { value: "cadastro" }, ["Cadastro mais recente"]),
+  ]);
+  const filters = [
+    { key: "todos", label: "Todos" },
+    { key: "recentes", label: "Atendidos recentemente" },
+    { key: "pendencias", label: "Com pendências" },
+  ];
+  let allPatients = [];
+  let activeFilter = "todos";
+  let currentPage = 1;
+  const pageSize = 10;
+
+  const filterButtons = filters.map((filter) => h("button", {
+    class: "btn patients-filter" + (filter.key === activeFilter ? " active" : ""),
+    type: "button",
+    "data-filter": filter.key,
+    onclick: () => {
+      activeFilter = filter.key;
+      currentPage = 1;
+      filterButtons.forEach((button) => {
+        button.classList.toggle("active", button.getAttribute("data-filter") === activeFilter);
+      });
+      renderPatients();
+    },
+  }, [filter.label]));
+
+  function patientMatchesSearch(patient) {
+    const term = q.value.trim().toLocaleLowerCase("pt-BR");
+    if (!term) return true;
+    return [patient.nome_completo, patient.telefone, patient.email]
+      .filter(Boolean)
+      .some((value) => value.toLocaleLowerCase("pt-BR").includes(term));
+  }
+
+  function patientMatchesFilter(patient) {
+    if (activeFilter === "pendencias") return patient.tem_pendencia;
+    if (activeFilter === "recentes") {
+      if (!patient.ultimo_atendimento) return false;
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 90);
+      return new Date(patient.ultimo_atendimento) >= cutoff;
+    }
+    return true;
+  }
+
+  function sortPatients(patients) {
+    return [...patients].sort((a, b) => {
+      if (sortSelect.value === "recentes") {
+        return new Date(b.ultimo_atendimento || 0) - new Date(a.ultimo_atendimento || 0);
+      }
+      if (sortSelect.value === "cadastro") {
+        return new Date(b.created_at) - new Date(a.created_at);
+      }
+      return a.nome_completo.localeCompare(b.nome_completo, "pt-BR", { sensitivity: "base" });
+    });
+  }
+
+  function patientStatus(patient) {
+    return patient.tem_pendencia
+      ? h("span", { class: "badge agendada" }, ["Consulta pendente"])
+      : h("span", { class: "badge concluida" }, ["Em dia"]);
+  }
+
+  function renderPatientRow(patient) {
+    const telDigits = (patient.telefone || "").replace(/\D/g, "");
+    const waNum = telDigits.startsWith("55") ? telDigits : "55" + telDigits;
+    const waMsg = encodeURIComponent(
+      `Olá, ${patient.nome_completo.split(" ")[0]}! 👋\n\nEntramos em contato da ${CLINIC_NAME}.\n\nPrecisa de alguma informação ou deseja agendar uma consulta? Estamos à disposição! 😊`
+    );
+    const lastAppointment = patient.ultimo_atendimento
+      ? new Date(patient.ultimo_atendimento).toLocaleDateString("pt-BR")
+      : "Sem atendimento";
+    const btnAcoes = h("button", {
+      class: "consult-menu-btn",
+      type: "button",
+      title: "Ações",
+      "aria-label": `Ações para ${patient.nome_completo}`,
+      onclick: (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        openPacienteMenu({
+          p: patient,
+          waNum,
+          waMsg,
+          onEdit: () => openEdit(patient),
+          onDelete: () => doDelete(patient),
+        });
+      },
+    }, ["⋯"]);
+
+    return h("a", {
+      class: "patient-row patient-table-row",
+      href: `#/paciente?id=${encodeURIComponent(patient.id)}`,
+      onclick: (event) => {
+        if (event.target.closest(".consult-menu-btn")) event.preventDefault();
+      },
+    }, [
+      h("div", { class: "patient-main-cell" }, [
+        h("div", { class: "patient-avatar" }, [
+          (patient.nome_completo || "?").split(" ").filter(Boolean).slice(0, 2)
+            .map((word) => word[0].toUpperCase()).join(""),
+        ]),
+        h("div", { class: "patient-info" }, [
+          h("div", { class: "patient-nome" }, [patient.nome_completo]),
+          h("div", { class: "patient-tel patient-mobile-meta" }, [patient.telefone]),
+        ]),
+      ]),
+      h("div", { class: "patient-table-cell patient-contact-cell" }, [
+        h("span", {}, [patient.telefone || "—"]),
+        h("small", {}, [patient.email || "Sem e-mail"]),
+      ]),
+      h("div", { class: "patient-table-cell patient-last-cell" }, [lastAppointment]),
+      h("div", { class: "patient-table-cell patient-status-cell" }, [patientStatus(patient)]),
+      h("div", { class: "patient-actions-cell" }, [btnAcoes]),
+    ]);
+  }
+
+  function renderPatients() {
+    const patients = sortPatients(
+      allPatients.filter(patientMatchesSearch).filter(patientMatchesFilter)
+    );
+    const totalPages = Math.max(1, Math.ceil(patients.length / pageSize));
+    currentPage = Math.min(currentPage, totalPages);
+    const start = (currentPage - 1) * pageSize;
+    const pagePatients = patients.slice(start, start + pageSize);
+
+    list.innerHTML = "";
+    if (!patients.length) {
+      list.append(h("div", { class: "patients-empty" }, [
+        h("div", { class: "patients-empty-icon", "aria-hidden": "true" }, ["👥"]),
+        h("strong", {}, ["Nenhum paciente encontrado"]),
+        h("span", { class: "muted" }, ["Ajuste a busca ou os filtros para ver outros resultados."]),
+      ]));
+      return;
+    }
+
+    const table = h("div", { class: "patient-list patient-table" }, [
+      h("div", { class: "patient-table-header", "aria-hidden": "true" }, [
+        h("span", {}, ["Paciente"]),
+        h("span", {}, ["Contato"]),
+        h("span", {}, ["Último atendimento"]),
+        h("span", {}, ["Situação"]),
+        h("span", {}, [""]),
+      ]),
+      ...pagePatients.map(renderPatientRow),
+    ]);
+    const rangeEnd = Math.min(start + pageSize, patients.length);
+    const pagination = h("div", { class: "patients-pagination" }, [
+      h("span", { class: "muted" }, [`${start + 1}–${rangeEnd} de ${patients.length}`]),
+      h("div", { class: "patients-pagination-actions" }, [
+        h("button", {
+          class: "btn",
+          type: "button",
+          disabled: currentPage === 1 ? "" : null,
+          onclick: () => { currentPage -= 1; renderPatients(); },
+        }, ["← Anterior"]),
+        h("span", { class: "patients-page-number" }, [`Página ${currentPage} de ${totalPages}`]),
+        h("button", {
+          class: "btn",
+          type: "button",
+          disabled: currentPage === totalPages ? "" : null,
+          onclick: () => { currentPage += 1; renderPatients(); },
+        }, ["Próxima →"]),
+      ]),
+    ]);
+    list.append(table, pagination);
+  }
 
   async function load() {
     list.innerHTML = "";
     list.append(h("div", { class: "muted" }, ["Carregando..."]));
     try {
-      const pts = await api(`/patients?search=${encodeURIComponent(q.value || "")}`);
-      list.innerHTML = "";
-      if (!pts.length) {
-        list.append(h("div", { class: "muted" }, ["Nenhum paciente. Cadastre o primeiro ou importe uma planilha."]));
-        return;
-      }
-      const tbl = h("div", { class: "patient-list" }, pts.map((p) => {
-
-        // Número WhatsApp
-        const telDigits = (p.telefone || "").replace(/\D/g, "");
-        const waNum = telDigits.startsWith("55") ? telDigits : "55" + telDigits;
-        const waMsg = encodeURIComponent(
-          `Olá, ${p.nome_completo.split(" ")[0]}! 👋\n\nEntramos em contato da ${CLINIC_NAME}.\n\nPrecisa de alguma informação ou deseja agendar uma consulta? Estamos à disposição! 😊`
-        );
-
-        // ── Botão ⋯ — abre menu de ações (mesmo estilo da agenda) ───────────
-        const btnAcoes = h("button", {
-          class: "consult-menu-btn",
-          type: "button",
-          title: "Ações",
-          "aria-label": `Ações para ${p.nome_completo}`,
-          onclick: (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            openPacienteMenu({ p, waNum, waMsg, onEdit: () => openEdit(p), onDelete: () => doDelete(p) });
-          },
-        }, ["⋯"]);
-
-        return h("a", {
-          class: "patient-row",
-          href: `#/paciente?id=${encodeURIComponent(p.id)}`,
-          onclick: (e) => {
-            if (e.target.closest(".consult-menu-btn")) e.preventDefault();
-          },
-        }, [
-          h("div", { class: "patient-avatar" }, [
-            (p.nome_completo || "?").split(" ").filter(Boolean).slice(0, 2)
-              .map(w => w[0].toUpperCase()).join(""),
-          ]),
-          h("div", { class: "patient-info" }, [
-            h("div", { class: "patient-nome" }, [p.nome_completo]),
-            h("div", { class: "patient-tel" }, [p.telefone]),
-          ]),
-          btnAcoes,
-        ]);
-      }));
-      list.append(tbl);
+      allPatients = await api("/patients?limit=500");
+      renderPatients();
     } catch (err) {
       toast(err.message);
     }
@@ -2462,20 +2636,28 @@ async function pacientesPage() {
     ]),
     importStatus,
     h("div", { class: "grid cards" }, [
-      h("div", { class: "card col-12" }, [
-        h("div", { class: "row", style: "margin-bottom:10px" }, [
-          q,
-          h("button", { class: "btn", onclick: load, title: "Atualizar lista" }, ["↺"]),
+      h("div", { class: "card col-12 patients-toolbar-card" }, [
+        h("div", { class: "patients-search-row" }, [
+          h("div", { class: "patients-search-wrap" }, [
+            h("span", { class: "patients-search-icon", "aria-hidden": "true" }, ["⌕"]),
+            q,
+          ]),
+          sortSelect,
+          h("button", { class: "btn", onclick: load, title: "Atualizar lista", "aria-label": "Atualizar lista" }, ["↺"]),
         ]),
+        h("div", { class: "patients-filters", role: "group", "aria-label": "Filtros de pacientes" }, filterButtons),
       ]),
       h("div", { class: "card col-12" }, [list]),
     ]),
   ]);
 
-  let t = null;
   q.addEventListener("input", () => {
-    clearTimeout(t);
-    t = setTimeout(load, 200);
+    currentPage = 1;
+    renderPatients();
+  });
+  sortSelect.addEventListener("change", () => {
+    currentPage = 1;
+    renderPatients();
   });
   await load();
 }
@@ -2684,7 +2866,7 @@ async function perfilPage() {
     class: "btn primary",
     type: "submit",
   }, ["Salvar mensagens do WhatsApp"]);
-  const whatsappTemplatesCard = h("div", { class: "card col-12" }, [
+  const whatsappTemplatesCard = h("div", { class: "card col-12 profile-section profile-section-notificacoes" }, [
     h("div", { class: "row", style: "margin-bottom:14px; align-items:center" }, [
       h("h2", { style: "margin:0" }, ["💬 Mensagens do WhatsApp"]),
     ]),
@@ -2778,13 +2960,52 @@ async function perfilPage() {
     h("div", { class: "row", style: "margin-top:4px" }, [btnSalvarLembrete]),
   );
 
+  const profileTabsConfig = [
+    { key: "dados", icon: "👤", label: "Dados pessoais" },
+    { key: "seguranca", icon: "🔒", label: "Segurança" },
+    { key: "notificacoes", icon: "🔔", label: "Notificações" },
+    { key: "aparencia", icon: "🎨", label: "Aparência" },
+  ];
+  let activeProfileTab = sessionStorage.getItem("profile-active-tab") || "dados";
+  if (!profileTabsConfig.some((tab) => tab.key === activeProfileTab)) activeProfileTab = "dados";
+  const profileTabButtons = profileTabsConfig.map((tab) => h("button", {
+    class: "profile-tab",
+    type: "button",
+    role: "tab",
+    "data-profile-tab": tab.key,
+    "aria-selected": tab.key === activeProfileTab ? "true" : "false",
+    onclick: () => activateProfileTab(tab.key),
+  }, [
+    h("span", { class: "profile-tab-icon", "aria-hidden": "true" }, [tab.icon]),
+    h("span", {}, [tab.label]),
+  ]));
+  const profileTabs = h("div", {
+    class: "profile-tabs",
+    role: "tablist",
+    "aria-label": "Seções do perfil",
+  }, profileTabButtons);
+
+  function activateProfileTab(tabKey) {
+    activeProfileTab = tabKey;
+    sessionStorage.setItem("profile-active-tab", tabKey);
+    profileTabButtons.forEach((button) => {
+      const isActive = button.getAttribute("data-profile-tab") === tabKey;
+      button.classList.toggle("active", isActive);
+      button.setAttribute("aria-selected", String(isActive));
+    });
+    document.querySelectorAll(".profile-section").forEach((section) => {
+      section.hidden = !section.classList.contains(`profile-section-${tabKey}`);
+    });
+  }
+
   pageShell("perfil", [
     h("div", { class: "row", style: "margin-bottom:12px" }, [
       h("h2", { style: "margin:0; font-size:16px" }, ["Meu Perfil"]),
     ]),
+    profileTabs,
     h("div", { class: "grid cards" }, [
       // ── Card avatar ──────────────────────────────────────────────────────
-      h("div", { class: "card col-4", style: "text-align:center" }, [
+      h("div", { class: "card col-4 profile-section profile-section-dados", style: "text-align:center" }, [
         h("h2", {}, ["Foto / Logo"]),
         avatarPreview,
         h("div", { class: "sub", style: "margin:8px 0" }, ["JPEG, PNG ou WebP • máx. 2MB"]),
@@ -2796,7 +3017,7 @@ async function perfilPage() {
         ]),
       ]),
       // ── Card dados profissionais ─────────────────────────────────────────
-      h("div", { class: "card col-8" }, [
+      h("div", { class: "card col-8 profile-section profile-section-dados" }, [
         h("h2", {}, ["Dados profissionais"]),
         h("form", {
           class: "form",
@@ -2844,7 +3065,7 @@ async function perfilPage() {
         ]),
       ]),
       // ── Card alterar senha ───────────────────────────────────────────────
-      h("div", { class: "card col-12" }, [
+      h("div", { class: "card col-12 profile-section profile-section-seguranca" }, [
         h("div", { class: "row", style: "margin-bottom:14px" }, [
           h("h2", { style: "margin:0" }, ["🔑 Alterar senha"]),
         ]),
@@ -2897,7 +3118,7 @@ async function perfilPage() {
         ]),
       ]),
       // ── Card tema ────────────────────────────────────────────────────────
-      h("div", { class: "card col-12 theme-card" }, [
+      h("div", { class: "card col-12 theme-card profile-section profile-section-aparencia" }, [
         h("div", { class: "row", style: "margin-bottom:10px" }, [
           h("h2", { style: "margin:0" }, ["🎨 Aparência"]),
         ]),
@@ -2948,7 +3169,7 @@ async function perfilPage() {
         ]),
       ]),
       // ── Card lembretes ───────────────────────────────────────────────────
-      h("div", { class: "card col-12" }, [
+      h("div", { class: "card col-12 profile-section profile-section-notificacoes" }, [
         h("div", { class: "row", style: "margin-bottom:14px; align-items:center" }, [
           h("h2", { style: "margin:0" }, ["📨 Lembretes automáticos"]),
           h("div", { class: "spacer" }),
@@ -3076,7 +3297,7 @@ async function perfilPage() {
   const app = document.getElementById("app");
   const cardsGrid = app.querySelector(".grid.cards");
   if (cardsGrid) {
-    const pushCard = h("div", { class: "card col-12" }, [
+    const pushCard = h("div", { class: "card col-12 profile-section profile-section-notificacoes" }, [
       h("div", { class: "row", style: "margin-bottom:12px" }, [
         h("h2", { style: "margin:0" }, ["🔔 Notificações push"]),
       ]),
@@ -3122,7 +3343,7 @@ async function perfilPage() {
       }
     };
 
-    const emailCard = h("div", { class: "card col-12" }, [
+    const emailCard = h("div", { class: "card col-12 profile-section profile-section-notificacoes" }, [
       h("div", { class: "row", style: "margin-bottom:12px" }, [
         h("h2", { style: "margin:0" }, ["📧 Teste de e-mail"]),
       ]),
@@ -3169,7 +3390,7 @@ async function perfilPage() {
       }
     };
 
-    const whatsappCard = h("div", { class: "card col-12" }, [
+    const whatsappCard = h("div", { class: "card col-12 profile-section profile-section-notificacoes" }, [
       h("div", { class: "row", style: "margin-bottom:12px" }, [
         h("h2", { style: "margin:0" }, ["💬 Teste de WhatsApp"]),
       ]),
@@ -3185,7 +3406,7 @@ async function perfilPage() {
     const acessoAte = u.acesso_ate
       ? new Date(u.acesso_ate).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })
       : "Acesso liberado";
-    const pagamentoCard = h("div", { class: "card col-12 profile-payment-card" }, [
+    const pagamentoCard = h("div", { class: "card col-12 profile-payment-card profile-section profile-section-seguranca" }, [
       h("div", { class: "row", style: "margin-bottom:12px; align-items:center" }, [
         h("h2", { style: "margin:0" }, ["Plano e pagamento"]),
         h("div", { class: "spacer" }),
@@ -3203,6 +3424,7 @@ async function perfilPage() {
     cardsGrid.append(pagamentoCard);
   }
 
+  activateProfileTab(activeProfileTab);
   await atualizarStatusPush();
 }
 
@@ -3474,9 +3696,36 @@ initPWA();
 
 // ── Banner "Adicionar à tela inicial" ─────────────────────────────────────────
 let _deferredInstall = null;
+
+function syncPwaInstallAction() {
+  document.querySelectorAll(".pwa-install-menu-item").forEach((item) => {
+    item.style.display = _deferredInstall ? "" : "none";
+  });
+}
+
+async function promptPwaInstall() {
+  if (!_deferredInstall) {
+    toast("A instalação não está disponível neste navegador agora.");
+    return false;
+  }
+
+  _deferredInstall.prompt();
+  const { outcome } = await _deferredInstall.userChoice;
+  document.querySelector(".pwa-banner")?.remove();
+  _deferredInstall = null;
+  syncPwaInstallAction();
+  if (outcome === "accepted") {
+    toast("✅ App instalado!");
+    showPushActivationPrompt();
+    return true;
+  }
+  return false;
+}
+
 window.addEventListener("beforeinstallprompt", (e) => {
   e.preventDefault();
   _deferredInstall = e;
+  syncPwaInstallAction();
 
   // Não mostra se já foi dispensado nesta sessão ou permanentemente
   if (sessionStorage.getItem("pwa-dismissed") || localStorage.getItem("pwa-dismissed")) return;
@@ -3500,16 +3749,7 @@ window.addEventListener("beforeinstallprompt", (e) => {
     `;
     document.body.prepend(banner); // topo da página
 
-    document.getElementById("pwa-install-btn").onclick = async () => {
-      _deferredInstall.prompt();
-      const { outcome } = await _deferredInstall.userChoice;
-      banner.remove();
-      if (outcome === "accepted") {
-        toast("✅ App instalado!");
-        showPushActivationPrompt();
-      }
-      _deferredInstall = null;
-    };
+    document.getElementById("pwa-install-btn").onclick = promptPwaInstall;
     document.getElementById("pwa-dismiss-btn").onclick = () => {
       banner.remove();
       // Guarda na sessão (some ao fechar o browser) — não persiste para sempre
@@ -3522,6 +3762,7 @@ window.addEventListener("appinstalled", () => {
   toast("✅ Agenda Médica instalada com sucesso!");
   setTimeout(showPushActivationPrompt, 800);
   _deferredInstall = null;
+  syncPwaInstallAction();
 });
 
 (async () => {

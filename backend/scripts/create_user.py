@@ -67,19 +67,19 @@ def main() -> None:
             )
             db.add(user)
             db.commit()
-            print(f"\n✅ Usuário criado com sucesso!")
+            print("\n✅ Usuário criado com sucesso!")
             print(f"   ID:    {user.id}")
             print(f"   Email: {user.email}")
             print(f"   Nome:  {user.nome or '(não informado)'}")
     except OperationalError as exc:
         masked = _mask_url(database_url)
-        print(f"\n❌ Falha ao conectar no banco de dados.", file=sys.stderr)
+        print("\n❌ Falha ao conectar no banco de dados.", file=sys.stderr)
         print(f"   DATABASE_URL: {masked}", file=sys.stderr)
-        print(f"\nDicas:", file=sys.stderr)
-        print(f"  - Verifique se o banco está acessível e as credenciais estão corretas.", file=sys.stderr)
-        print(f"  - Se a senha tiver caracteres especiais (@, :, espaço), use URL-encoding:", file=sys.stderr)
-        print(f'    python -c "import urllib.parse; print(urllib.parse.quote_plus(\'SUA_SENHA\'))"', file=sys.stderr)
-        print(f"  - Certifique-se de rodar as migrations antes: python -m backend.scripts.migrate", file=sys.stderr)
+        print("\nDicas:", file=sys.stderr)
+        print("  - Verifique se o banco está acessível e as credenciais estão corretas.", file=sys.stderr)
+        print("  - Se a senha tiver caracteres especiais (@, :, espaço), use URL-encoding:", file=sys.stderr)
+        print('    python -c "import urllib.parse; print(urllib.parse.quote_plus(\'SUA_SENHA\'))"', file=sys.stderr)
+        print("  - Certifique-se de rodar as migrations antes: python -m backend.scripts.migrate", file=sys.stderr)
         raise SystemExit(2) from exc
 
 

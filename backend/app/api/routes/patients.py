@@ -3,7 +3,7 @@ from __future__ import annotations
 import io
 from datetime import date
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, status
 from fastapi.responses import Response, StreamingResponse
 from sqlalchemy import and_, select
 from sqlalchemy.orm import Session
@@ -11,6 +11,7 @@ from sqlalchemy.orm import Session
 from backend.app.crud.patients import (
     create_patient,
     delete_patient,
+    get_patient_activity,
     get_patient,
     list_patients,
     update_patient,
@@ -18,20 +19,39 @@ from backend.app.crud.patients import (
 from backend.app.db.session import get_db
 from backend.app.models.appointment import Consulta
 from backend.app.schemas.history import HistoricoPacienteOut
-from backend.app.schemas.patient import PacienteCreate, PacienteDetail, PacienteOut, PacienteUpdate
+from backend.app.schemas.patient import (
+    PacienteCreate,
+    PacienteDetail,
+    PacienteListOut,
+    PacienteOut,
+    PacienteUpdate,
+)
 from backend.app.utils.deps import get_current_user
 from backend.app.utils.pdf import gerar_historico_pdf
 
 router = APIRouter()
 
 
-@router.get("", response_model=list[PacienteOut])
+@router.get("", response_model=list[PacienteListOut])
 def list_(
     search: str | None = None,
+    limit: int = Query(default=50, ge=1, le=500),
     db: Session = Depends(get_db),
     user=Depends(get_current_user),
-) -> list[PacienteOut]:
-    return list_patients(db, usuario_id=user.id, search=search)
+) -> list[PacienteListOut]:
+    patients = list_patients(db, usuario_id=user.id, search=search, limit=limit)
+    activity = get_patient_activity(
+        db,
+        usuario_id=user.id,
+        patient_ids=[patient.id for patient in patients],
+    )
+    return [
+        PacienteListOut.model_validate({
+            **PacienteOut.model_validate(patient).model_dump(),
+            **activity.get(patient.id, {}),
+        })
+        for patient in patients
+    ]
 
 
 @router.post("", response_model=PacienteOut, status_code=status.HTTP_201_CREATED)

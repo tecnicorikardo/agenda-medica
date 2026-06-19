@@ -19,6 +19,20 @@ test.describe('Pacientes', () => {
     await expect(page.locator('input[placeholder*="nome ou telefone"]')).toBeVisible();
   });
 
+  test('exibe filtros rápidos e ordenação', async ({ page }) => {
+    await expect(page.locator('.patients-filter')).toHaveCount(3);
+    await expect(page.locator('.patients-filter').filter({ hasText: 'Atendidos recentemente' })).toBeVisible();
+    await expect(page.locator('.patients-filter').filter({ hasText: 'Com pendências' })).toBeVisible();
+    await expect(page.locator('.patients-sort')).toBeVisible();
+  });
+
+  test('alterna filtros sem recarregar a página', async ({ page }) => {
+    const pendingFilter = page.locator('.patients-filter').filter({ hasText: 'Com pendências' });
+    await pendingFilter.click();
+    await expect(pendingFilter).toHaveClass(/active/);
+    await expect(page.locator('.patient-list, .patients-empty')).toBeVisible();
+  });
+
   test('exibe botão de novo paciente', async ({ page }) => {
     const btnNovo = page.locator('.btn.primary').filter({ hasText: /novo paciente/i }).first();
     await expect(btnNovo).toBeVisible();
@@ -50,12 +64,7 @@ test.describe('Pacientes', () => {
   test('busca em tempo real filtra pacientes', async ({ page }) => {
     const busca = page.locator('input[placeholder*="nome ou telefone"]');
     await busca.fill('zzzzinexistente999');
-    // Aguarda debounce + resposta
-    await page.waitForTimeout(600);
-    // Não deve haver nenhum paciente com esse nome
-    const pacienteNomes = page.locator('.patient-nome');
-    const count = await pacienteNomes.count();
-    expect(count).toBe(0);
+    await expect(page.locator('.patients-empty')).toBeVisible();
   });
 
   test('botão de exportar Excel está visível', async ({ page }) => {

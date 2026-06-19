@@ -29,8 +29,14 @@ test.describe('Perfil', () => {
     await expect(crmInput).toBeVisible({ timeout: 8_000 });
   });
 
+  test('organiza configurações em quatro abas', async ({ page }) => {
+    await expect(page.locator('.profile-tab')).toHaveCount(4);
+    await expect(page.locator('.profile-tab').filter({ hasText: 'Dados pessoais' })).toHaveClass(/active/);
+  });
+
   test('toggle de tema claro/escuro funciona', async ({ page }) => {
     await page.waitForLoadState('networkidle');
+    await page.locator('.profile-tab').filter({ hasText: 'Aparência' }).click();
     // Botões de tema têm classe .theme-option
     const btnEscuro = page.locator('.theme-option').first();
     const btnClaro  = page.locator('.theme-option').nth(1);
@@ -49,10 +55,15 @@ test.describe('Perfil', () => {
   });
 
   test('seção de lembretes está visível', async ({ page }) => {
-    // Scroll para encontrar a seção de lembretes
-    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+    await page.locator('.profile-tab').filter({ hasText: 'Notificações' }).click();
     const lembretesSection = page.locator('.card').filter({ hasText: /lembrete/i }).first();
     await expect(lembretesSection).toBeVisible({ timeout: 5_000 });
+  });
+
+  test('exibe teste de WhatsApp na aba de notificações', async ({ page }) => {
+    await page.locator('.profile-tab').filter({ hasText: 'Notificações' }).click();
+    await expect(page.locator('.card').filter({ hasText: 'Teste de WhatsApp' })).toBeVisible();
+    await expect(page.getByRole('button', { name: /enviar whatsapp de teste/i })).toBeVisible();
   });
 
   test('navegação de volta para dashboard pelo bottom nav', async ({ page }) => {

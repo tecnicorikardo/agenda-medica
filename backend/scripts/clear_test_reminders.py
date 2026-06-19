@@ -1,8 +1,10 @@
 """Remove lembretes de teste para permitir reenvio."""
-from dotenv import load_dotenv
-load_dotenv()
 import os
+
+from dotenv import load_dotenv
 from sqlalchemy import create_engine, text
+
+load_dotenv()
 
 engine = create_engine(os.environ["DATABASE_URL"])
 with engine.begin() as conn:

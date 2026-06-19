@@ -33,5 +33,10 @@ class PacienteOut(PacienteBase):
     created_at: datetime
 
 
+class PacienteListOut(PacienteOut):
+    ultimo_atendimento: datetime | None = None
+    tem_pendencia: bool = False
+
+
 class PacienteDetail(PacienteOut):
     updated_at: datetime

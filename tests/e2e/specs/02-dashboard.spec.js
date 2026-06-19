@@ -25,6 +25,8 @@ test.describe('Dashboard', () => {
     const cards = page.locator('.grid.cards .card');
     const count = await cards.count();
     expect(count).toBeGreaterThanOrEqual(3);
+    await expect(page.locator('.kpi-card')).toHaveCount(3);
+    await expect(page.locator('.kpi-icon')).toHaveCount(3);
   });
 
   test('exibe cards de acesso rápido Agenda e Pacientes', async ({ page }) => {

@@ -79,7 +79,7 @@ def gerar_historico_pdf(paciente, consultas: list) -> bytes:
 
     # Cabeçalho
     story.append(Paragraph("Agenda Médica", label_style))
-    story.append(Paragraph(f"Histórico do Paciente", title_style))
+    story.append(Paragraph("Histórico do Paciente", title_style))
     story.append(Spacer(1, 0.3 * cm))
 
     # Dados do paciente

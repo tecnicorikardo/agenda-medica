@@ -6,9 +6,9 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
 from dotenv import load_dotenv
-load_dotenv()
-
 from sqlalchemy import create_engine, text
+
+load_dotenv()
 
 DATABASE_URL = os.environ["DATABASE_URL"]
 TZ = ZoneInfo("America/Sao_Paulo")

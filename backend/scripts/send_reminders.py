@@ -18,7 +18,6 @@ Variáveis de ambiente opcionais:
 from __future__ import annotations
 
 import os
-import sys
 import uuid
 import webbrowser
 from datetime import datetime, timedelta

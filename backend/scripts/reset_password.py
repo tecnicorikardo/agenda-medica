@@ -1,11 +1,15 @@
 """Redefine a senha de um usuário pelo e-mail."""
+import os
+import sys
+
 from dotenv import load_dotenv
-load_dotenv()
-import sys, os
 from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
-from backend.app.models.user import Usuario
+
 from backend.app.core.security import hash_password
+from backend.app.models.user import Usuario
+
+load_dotenv()
 
 email = sys.argv[1] if len(sys.argv) > 1 else input("E-mail: ").strip()
 nova  = sys.argv[2] if len(sys.argv) > 2 else input("Nova senha: ").strip()

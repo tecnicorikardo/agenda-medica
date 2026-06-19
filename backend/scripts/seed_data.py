@@ -90,7 +90,7 @@ def main() -> None:
             print(f"  Paciente criado: {nome}")
 
         db.commit()
-        print(f"\n30 pacientes criados!")
+        print("\n30 pacientes criados!")
 
         # Cria ~20 consultas nos próximos 7 dias
         hoje = datetime.now(TZ).date()
