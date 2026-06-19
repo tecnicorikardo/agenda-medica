@@ -127,7 +127,7 @@ async def test_whatsapp(
         try:
             await send_whatsapp_message(
                 to=telefone_medico,
-                body=f"[TESTE]\n{reminder.body}",
+                body=reminder.body,  # Removido [TESTE] - não funciona com templates
                 template_name=settings.whatsapp_doctor_template_name,
                 language_code=settings.whatsapp_template_language,
                 template_parameters=reminder.template_parameters,
@@ -176,12 +176,12 @@ async def test_whatsapp(
             try:
                 await send_whatsapp_message(
                     to=telefone_paciente,
-                    body=f"[TESTE]\n{reminder.body}",
+                    body=reminder.body,  # Removido [TESTE] - não funciona com templates
                     template_name=settings.whatsapp_patient_template_name,
                     language_code=settings.whatsapp_template_language,
                     template_parameters=patient_template_parameters(
                         reminder,
-                        rendered_body=reminder.body,
+                        rendered_body=reminder.body,  # Body sem [TESTE]
                         parameter_mode=settings.whatsapp_patient_template_parameter_mode,
                     ),
                     quick_reply_payloads=patient_quick_reply_payloads(
