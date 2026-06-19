@@ -170,9 +170,6 @@ async def send_whatsapp_template(
     logger.debug(f"WhatsApp full payload: {payload}")
     
     return await _post_message(payload)
-        })
-    if components:
-        template["components"] = components
 
     return await _post_message({
         "messaging_product": "whatsapp",
