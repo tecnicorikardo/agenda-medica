@@ -34,7 +34,7 @@ services:
       - key: WHATSAPP_ACCESS_TOKEN
         sync: false
       - key: WHATSAPP_PHONE_NUMBER_ID
-        value: "1092534873945633"
+        value: "1142035782328806"
       - key: WHATSAPP_API_VERSION
         value: v20.0
       - key: WHATSAPP_DEFAULT_COUNTRY_CODE
@@ -42,13 +42,13 @@ services:
       - key: WHATSAPP_TEMPLATE_LANGUAGE
         value: pt_BR
       - key: WHATSAPP_PATIENT_TEMPLATE_NAME
-        value: agenda_paciente_h
+        value: agenda_paciente_lembrete
       - key: WHATSAPP_PATIENT_TEMPLATE_PARAMETER_MODE
         value: standard
       - key: WHATSAPP_PATIENT_TEMPLATE_QUICK_REPLY_COUNT
         value: "0"
       - key: WHATSAPP_DOCTOR_TEMPLATE_NAME
-        value: agenda_medico_re
+        value: agenda_medico_resumo_v2
       # E-mail SMTP (configurações atualizadas)
       - key: SMTP_HOST
         value: smtp.gmail.com
