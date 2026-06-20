@@ -39,6 +39,7 @@ async def _enviar_confirmacao_agendamento(
     fim: datetime,
     clinic_name: str,
     doctor_name: str | None,
+    doctor_email: str,
     observacoes_consulta: str | None,
 ) -> None:
     from backend.app.db.session import SessionLocal
@@ -52,6 +53,7 @@ async def _enviar_confirmacao_agendamento(
         fim=fim,
         clinic_name=clinic_name,
         doctor_name=doctor_name,
+        doctor_email=doctor_email,
         observacoes_consulta=observacoes_consulta,
     )
 
@@ -171,6 +173,7 @@ def create_(
                 fim=consulta.fim,
                 clinic_name=user.nome_clinica or "Agenda Médica",
                 doctor_name=user.nome,
+                doctor_email=user.email_contato or user.email,
                 observacoes_consulta=consulta.observacoes,
             )
         return _as_with_paciente(consulta)

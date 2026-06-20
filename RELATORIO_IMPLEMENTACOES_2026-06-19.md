@@ -481,3 +481,54 @@ para quando um template compatível estiver aprovado.
 - causa do erro `132018` identificada;
 - payload do paciente corrigido;
 - commits enviados ao repositório remoto.
+
+## 11. Atualização de 20 de Junho de 2026
+
+### 11.1. Teste de WhatsApp ocultado
+
+O card `Teste de WhatsApp` e o botão `Enviar WhatsApp de teste` foram removidos
+da aba de notificações do Perfil.
+
+A rota técnica de teste foi preservada no backend para uma possível retomada
+futura da integração, mas não existe mais uma ação visível na interface que
+possa disparar mensagens de teste acidentalmente.
+
+### 11.2. Confirmação do paciente por e-mail
+
+Os e-mails enviados ao paciente agora possuem o botão:
+
+```text
+Confirmar presença por e-mail
+```
+
+O botão foi incluído em:
+
+- confirmação enviada imediatamente após o agendamento;
+- lembrete de consulta enviado antes do atendimento;
+- e-mail gerado pelo teste de e-mail do Perfil.
+
+Ao clicar, o aplicativo de e-mail do paciente é aberto com uma mensagem
+pré-preenchida para o e-mail de contato do médico. A mensagem contém:
+
+- nome do paciente;
+- data da consulta;
+- horário;
+- nome da clínica;
+- assunto de confirmação.
+
+O destinatário utilizado é o campo `E-mail para lembretes` do Perfil. Quando
+esse campo não estiver preenchido, o sistema utiliza o e-mail principal da
+conta do médico.
+
+O paciente precisa revisar e enviar a mensagem no aplicativo de e-mail. O
+clique isolado não altera automaticamente o status da consulta no sistema.
+
+### 11.3. Testes desta atualização
+
+- lint completo aprovado;
+- compilação Python aprovada;
+- sintaxe JavaScript aprovada;
+- 19 testes unitários aprovados;
+- três novos testes para o botão de confirmação por e-mail;
+- teste E2E atualizado para garantir que o teste do WhatsApp permaneça oculto;
+- verificação visual do e-mail e da aba de notificações realizada no navegador.

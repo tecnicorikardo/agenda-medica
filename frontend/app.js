@@ -3349,59 +3349,12 @@ async function perfilPage() {
       ]),
       h("div", { class: "sub", style: "margin-bottom:14px" }, [
         "Dispara um e-mail de teste agora para o médico (e-mail para lembretes) e para o paciente da próxima consulta. ",
-        "Útil para verificar se o SMTP está configurado corretamente.",
+        "O e-mail do paciente inclui a confirmação de presença para o endereço do médico.",
       ]),
       emailTestStatus,
       h("div", { class: "row", style: "margin-top:12px" }, [btnTestarEmail]),
     ]);
     cardsGrid.append(emailCard);
-
-    // ── Card de teste de WhatsApp ──────────────────────────────────────────
-    const whatsappTestStatus = h("div", { class: "push-status", style: "min-height:0" });
-    const btnTestarWhatsapp = h("button", { class: "btn whatsapp", type: "button" }, ["💬 Enviar WhatsApp de teste"]);
-
-    btnTestarWhatsapp.onclick = async () => {
-      btnTestarWhatsapp.disabled = true;
-      btnTestarWhatsapp.textContent = "Enviando...";
-      whatsappTestStatus.className = "push-status";
-      whatsappTestStatus.innerHTML = "";
-      try {
-        const r = await api("/whatsapp/test", { method: "POST", body: "{}" });
-        const res = r.resultados || {};
-        let html = "";
-        if (res.medico) {
-          const icon = res.medico.ok ? "✅" : "⚠️";
-          html += `<div>${icon} <strong>Médico:</strong> ${res.medico.telefone || ""} — ${res.medico.detalhe}</div>`;
-        }
-        if (res.paciente) {
-          const icon = res.paciente.ok ? "✅" : "⚠️";
-          const pac = res.paciente.paciente ? ` (${res.paciente.paciente})` : "";
-          html += `<div>${icon} <strong>Paciente${pac}:</strong> ${res.paciente.telefone || ""} — ${res.paciente.detalhe}</div>`;
-        }
-        const hasSuccess = Object.values(res).some(item => item && item.ok);
-        whatsappTestStatus.innerHTML = html || "Concluído.";
-        whatsappTestStatus.className = "push-status " + (hasSuccess ? "push-ok" : "push-warn");
-      } catch (err) {
-        whatsappTestStatus.className = "push-status push-warn";
-        whatsappTestStatus.textContent = "Erro: " + err.message;
-      } finally {
-        btnTestarWhatsapp.disabled = false;
-        btnTestarWhatsapp.textContent = "💬 Enviar WhatsApp de teste";
-      }
-    };
-
-    const whatsappCard = h("div", { class: "card col-12 profile-section profile-section-notificacoes" }, [
-      h("div", { class: "row", style: "margin-bottom:12px" }, [
-        h("h2", { style: "margin:0" }, ["💬 Teste de WhatsApp"]),
-      ]),
-      h("div", { class: "sub", style: "margin-bottom:14px" }, [
-        "Dispara uma mensagem real via WhatsApp Cloud API para o telefone do médico e para o paciente da próxima consulta. ",
-        "Use para validar token, Phone Number ID e contatos cadastrados.",
-      ]),
-      whatsappTestStatus,
-      h("div", { class: "row", style: "margin-top:12px" }, [btnTestarWhatsapp]),
-    ]);
-    cardsGrid.append(whatsappCard);
 
     const acessoAte = u.acesso_ate
       ? new Date(u.acesso_ate).toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric" })

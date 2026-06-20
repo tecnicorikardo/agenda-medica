@@ -310,6 +310,7 @@ async def _processar(dias_antes: int) -> dict:
                         dias_antes=dias_antes,
                         clinic_name=clinic_name,
                         doctor_name=doctor_name,
+                        doctor_email=medico.email_contato or medico.email,
                         consultas_historico=historico,
                         observacoes_consulta=c.observacoes,
                         msg_personalizada=medico.lembrete_msg_paciente,

@@ -162,6 +162,7 @@ async def test_email(
                 dias_antes=1,
                 clinic_name=clinic_name,
                 doctor_name=doctor_name,
+                doctor_email=email_medico,
                 consultas_historico=historico,
                 observacoes_consulta=proxima.observacoes,
                 msg_personalizada=user.lembrete_msg_paciente,

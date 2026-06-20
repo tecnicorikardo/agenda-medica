@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import datetime
 from html import escape
+from urllib.parse import quote, urlencode
 from zoneinfo import ZoneInfo
 
 TZ = ZoneInfo("America/Sao_Paulo")
@@ -67,6 +68,9 @@ _BASE = """<!DOCTYPE html>
   .agenda-info{{flex:1}}
   .agenda-name{{font-weight:700;font-size:14px}}
   .agenda-sub{{font-size:12px;color:#6b7fa8;margin-top:2px}}
+  .actions{{margin:24px 0;text-align:center}}
+  .button{{display:inline-block;padding:13px 22px;border-radius:10px;background:#0ea5e9;color:#fff!important;text-decoration:none;font-size:14px;font-weight:800}}
+  .action-note{{margin:10px 0 0;color:#6b7fa8;font-size:12px;line-height:1.5}}
   .footer{{background:#f5f8ff;border-top:1px solid #dce8ff;padding:18px 32px;text-align:center;font-size:12px;color:#8a9bbf}}
   @media(max-width:600px){{
     .body{{padding:20px 16px}}
@@ -122,6 +126,38 @@ def _render_msg(template: str | None, default: str, **kwargs) -> str:
         return default.format(**kwargs)
 
 
+def _confirmation_email_action(
+    *,
+    doctor_email: str | None,
+    paciente_nome: str,
+    inicio: datetime,
+    clinic_name: str,
+) -> str:
+    email = (doctor_email or "").strip()
+    if not email:
+        return ""
+
+    data_str = _fmt_date_br(inicio)
+    hora_str = _fmt_hora(inicio)
+    subject = f"Confirmação de consulta - {paciente_nome} - {data_str} às {hora_str}"
+    body = (
+        "Olá!\n\n"
+        f"Confirmo minha presença na consulta de {data_str} às {hora_str}, "
+        f"na {clinic_name}.\n\n"
+        f"Paciente: {paciente_nome}"
+    )
+    query = urlencode({"subject": subject, "body": body}, quote_via=quote)
+    href = escape(f"mailto:{email}?{query}", quote=True)
+    return f"""
+    <div class="actions">
+      <a class="button" href="{href}">Confirmar presença por e-mail</a>
+      <p class="action-note">
+        Ao clicar, seu aplicativo de e-mail será aberto com a confirmação preenchida.
+        Revise e envie a mensagem ao consultório.
+      </p>
+    </div>"""
+
+
 # ─── E-mail para o PACIENTE ───────────────────────────────────────────────────
 
 def confirmacao_agendamento_paciente_html(
@@ -131,6 +167,7 @@ def confirmacao_agendamento_paciente_html(
     fim: datetime,
     clinic_name: str,
     doctor_name: str | None,
+    doctor_email: str | None = None,
     observacoes_consulta: str | None = None,
 ) -> tuple[str, str]:
     """Retorna (subject, html) da confirmação imediata de agendamento."""
@@ -170,6 +207,12 @@ def confirmacao_agendamento_paciente_html(
         <span class="card-value">{escape(clinic_name)}</span>
       </div>{obs_row}
     </div>
+    {_confirmation_email_action(
+        doctor_email=doctor_email,
+        paciente_nome=paciente_nome,
+        inicio=inicio,
+        clinic_name=clinic_name,
+    )}
     <p class="intro">Caso não possa comparecer, avise o consultório com antecedência para remarcarmos seu horário.</p>
     """
 
@@ -190,6 +233,7 @@ def lembrete_paciente_html(
     dias_antes: int,
     clinic_name: str,
     doctor_name: str | None,
+    doctor_email: str | None = None,
     consultas_historico: list | None = None,
     observacoes_consulta: str | None = None,
     msg_personalizada: str | None = None,
@@ -263,6 +307,12 @@ def lembrete_paciente_html(
     content = f"""
     <p class="intro">{intro_text}</p>
     {consulta_card}
+    {_confirmation_email_action(
+        doctor_email=doctor_email,
+        paciente_nome=paciente_nome,
+        inicio=inicio,
+        clinic_name=clinic_name,
+    )}
     {hist_section}
     """
 
