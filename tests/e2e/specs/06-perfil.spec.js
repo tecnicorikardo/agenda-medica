@@ -60,10 +60,12 @@ test.describe('Perfil', () => {
     await expect(lembretesSection).toBeVisible({ timeout: 5_000 });
   });
 
-  test('não exibe teste de WhatsApp na aba de notificações', async ({ page }) => {
+  test('não exibe configurações do WhatsApp na aba de notificações', async ({ page }) => {
     await page.locator('.profile-tab').filter({ hasText: 'Notificações' }).click();
     await expect(page.locator('.card').filter({ hasText: 'Teste de WhatsApp' })).toHaveCount(0);
     await expect(page.getByRole('button', { name: /enviar whatsapp de teste/i })).toHaveCount(0);
+    await expect(page.locator('.card').filter({ hasText: 'Mensagens do WhatsApp' })).toHaveCount(0);
+    await expect(page.getByText('WhatsApp interativo:', { exact: true })).toHaveCount(0);
   });
 
   test('navegação de volta para dashboard pelo bottom nav', async ({ page }) => {

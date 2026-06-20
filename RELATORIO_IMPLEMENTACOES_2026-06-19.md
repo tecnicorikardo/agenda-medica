@@ -532,3 +532,18 @@ clique isolado não altera automaticamente o status da consulta no sistema.
 - três novos testes para o botão de confirmação por e-mail;
 - teste E2E atualizado para garantir que o teste do WhatsApp permaneça oculto;
 - verificação visual do e-mail e da aba de notificações realizada no navegador.
+
+### 11.4. Configurações do WhatsApp ocultadas
+
+Além do card de teste, foram retirados do Perfil enquanto a integração estiver
+pausada:
+
+- card `Mensagens do WhatsApp`;
+- editores das mensagens de lembrete, confirmação e cancelamento;
+- controles de lembrete interativo de 24 e 2 horas;
+- chamadas da tela para carregar ou salvar templates do WhatsApp;
+- textos do Perfil que indicavam envio automático pelo WhatsApp.
+
+O campo `WhatsApp / Telefone` passou a ser apresentado somente como `Telefone`.
+As rotas e serviços do backend foram preservados para permitir uma reativação
+futura sem perda da implementação existente.
