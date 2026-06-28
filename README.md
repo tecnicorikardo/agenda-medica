@@ -19,6 +19,15 @@ alembic/    migrations do banco de dados
 docs/       documentação
 ```
 
+## Documentação para desenvolvedores
+
+- [`docs/GUIA_DESENVOLVEDOR.md`](docs/GUIA_DESENVOLVEDOR.md) — ponto de partida para entender arquitetura, contas, variáveis de ambiente, rotas, banco, deploy, scripts e testes.
+- [`docs/FUNCIONALIDADES.md`](docs/FUNCIONALIDADES.md) — visão funcional do produto.
+- [`docs/WHATSAPP_TEMPLATES.md`](docs/WHATSAPP_TEMPLATES.md) e [`docs/WHATSAPP_CONFIRMACAO.md`](docs/WHATSAPP_CONFIRMACAO.md) — integração WhatsApp Cloud API.
+- [`COMO_USAR.md`](COMO_USAR.md) — comandos operacionais rápidos.
+
+Credenciais reais não devem ser versionadas. Use `.env` para desenvolvimento local e o painel do Render/Meta/GitHub/Mercado Pago para produção. Se precisar registrar contas internas do projeto, use `MINHAS_CONTAS.md`, que é ignorado pelo Git.
+
 ## Como rodar localmente
 
 ### 1) Criar banco PostgreSQL local

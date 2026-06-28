@@ -1,6 +1,7 @@
 # Agenda Médica — Documentação do Projeto
 
 > Última atualização: Maio/2026
+> Documento histórico. Para onboarding técnico atualizado, contas, variáveis, rotas, banco, deploy e testes, use [`docs/GUIA_DESENVOLVEDOR.md`](./GUIA_DESENVOLVEDOR.md).
 
 ---
 
