@@ -4977,6 +4977,47 @@ body.light .patients-pagination {
   }
 }
 
+/* Contraste em paineis escuros usados por temas personalizados. */
+body.theme-flamengo :is(.dp-popup, .dropdown-menu, .topbar-dropdown, .status-quick-menu, .pwa-banner),
+body.theme-rosa :is(.dp-popup, .dropdown-menu, .topbar-dropdown, .status-quick-menu, .pwa-banner),
+body.theme-lgbtqi :is(.dp-popup, .dropdown-menu, .topbar-dropdown, .status-quick-menu, .pwa-banner) {
+  --text: #F8FAFC;
+  --muted: #CBD5E1;
+  --line: #334155;
+  color: #F8FAFC;
+  background: rgba(11,20,40,.98);
+  border-color: rgba(148,163,184,.35);
+}
+
+body.theme-flamengo :is(.consult-menu-item, .consult-menu-close),
+body.theme-rosa :is(.consult-menu-item, .consult-menu-close),
+body.theme-lgbtqi :is(.consult-menu-item, .consult-menu-close) {
+  --text: #F8FAFC;
+  --muted: #CBD5E1;
+  color: #F8FAFC;
+  background: rgba(15,27,51,.72);
+  border-color: rgba(148,163,184,.28);
+}
+
+body.theme-flamengo :is(.dp-cell, .dp-month-cell, .dp-year-cell, .dp-weekday, .dp-header-btn, .dp-nav, .dp-header-range, .dropdown-item, .status-menu-item, .topbar-dropdown .dropdown-item),
+body.theme-rosa :is(.dp-cell, .dp-month-cell, .dp-year-cell, .dp-weekday, .dp-header-btn, .dp-nav, .dp-header-range, .dropdown-item, .status-menu-item, .topbar-dropdown .dropdown-item),
+body.theme-lgbtqi :is(.dp-cell, .dp-month-cell, .dp-year-cell, .dp-weekday, .dp-header-btn, .dp-nav, .dp-header-range, .dropdown-item, .status-menu-item, .topbar-dropdown .dropdown-item) {
+  color: #F8FAFC;
+}
+
+body.theme-flamengo :is(.dp-cell.dp-disabled, .dp-month-cell.dp-disabled, .dp-year-cell.dp-disabled),
+body.theme-rosa :is(.dp-cell.dp-disabled, .dp-month-cell.dp-disabled, .dp-year-cell.dp-disabled),
+body.theme-lgbtqi :is(.dp-cell.dp-disabled, .dp-month-cell.dp-disabled, .dp-year-cell.dp-disabled) {
+  color: #94A3B8;
+  opacity: .55;
+}
+
+body.theme-flamengo :is(.dp-cell.dp-selected, .dp-month-cell.dp-selected, .dp-year-cell.dp-selected),
+body.theme-rosa :is(.dp-cell.dp-selected, .dp-month-cell.dp-selected, .dp-year-cell.dp-selected),
+body.theme-lgbtqi :is(.dp-cell.dp-selected, .dp-month-cell.dp-selected, .dp-year-cell.dp-selected) {
+  color: #FFFFFF !important;
+}
+
 @media (max-width: 760px) {
   .dashboard-empty-state {
     align-items: flex-start;
