@@ -14,10 +14,14 @@ import backend.app.models  # noqa: F401 — registra todos os models no metadata
 # Configuração do Alembic
 config = context.config
 
+
+def _escape_config_value(value: str) -> str:
+    return value.replace("%", "%%")
+
 # Sobrescreve a URL com a variável de ambiente (obrigatório em produção)
 database_url = os.environ.get("DATABASE_URL", "")
 if database_url:
-    config.set_main_option("sqlalchemy.url", database_url)
+    config.set_main_option("sqlalchemy.url", _escape_config_value(database_url))
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
