@@ -14,6 +14,10 @@ import sys
 logger = logging.getLogger(__name__)
 
 
+def _escape_alembic_config_value(value: str) -> str:
+    return value.replace("%", "%%")
+
+
 def run_migrations() -> None:
     from alembic import command
     from alembic.config import Config
@@ -28,7 +32,7 @@ def run_migrations() -> None:
         logger.error("DATABASE_URL não definida — abortando migrations.")
         sys.exit(1)
 
-    alembic_cfg.set_main_option("sqlalchemy.url", database_url)
+    alembic_cfg.set_main_option("sqlalchemy.url", _escape_alembic_config_value(database_url))
     alembic_cfg.set_main_option("script_location", os.path.join(base_dir, "alembic"))
 
     logger.info("Rodando migrations (alembic upgrade head)...")
