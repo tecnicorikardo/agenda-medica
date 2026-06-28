@@ -5,9 +5,7 @@ services:
     dockerfilePath: ./Dockerfile
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: agenda-medica-db
-          property: connectionString
+        sync: false
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: AUTH_COOKIE_SECURE
@@ -74,9 +72,7 @@ services:
     schedule: "0 11 * * *"
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: agenda-medica-db
-          property: connectionString
+        sync: false
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: APP_TIMEZONE
@@ -135,9 +131,7 @@ services:
     schedule: "*/10 * * * *"
     envVars:
       - key: DATABASE_URL
-        fromDatabase:
-          name: agenda-medica-db
-          property: connectionString
+        sync: false
       - key: JWT_SECRET_KEY
         generateValue: true
       - key: APP_TIMEZONE
