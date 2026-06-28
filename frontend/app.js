@@ -6,12 +6,27 @@ const state = {
 const CLINIC_NAME = "Agenda Médica";
 
 // ── Tema claro/escuro ─────────────────────────────────────────────────────────
-function getTheme() { return localStorage.getItem("tema") || "light"; }
-function applyTheme(t) {
-  document.body.classList.toggle("light", t === "light");
-  document.querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", t === "light" ? "#0EA5E9" : "#0F172A");
-  localStorage.setItem("tema", t);
+const THEME_OPTIONS = [
+  { key: "dark", label: "Escuro", preview: "theme-preview-dark", meta: "#0F172A" },
+  { key: "light", label: "Claro", preview: "theme-preview-light", className: "light", meta: "#0EA5E9" },
+  { key: "flamengo", label: "Flamengo", preview: "theme-preview-flamengo", className: "theme-flamengo", meta: "#B5121B" },
+  { key: "rosa", label: "Rosa", preview: "theme-preview-rosa", className: "theme-rosa", meta: "#DB2777" },
+  { key: "lgbtqi", label: "LGBTQI+", preview: "theme-preview-lgbtqi", className: "theme-lgbtqi", meta: "#7C3AED" },
+];
+
+const THEME_CLASSES = THEME_OPTIONS.map((theme) => theme.className).filter(Boolean);
+
+function getTheme() {
+  const saved = localStorage.getItem("tema") || "light";
+  return THEME_OPTIONS.some((theme) => theme.key === saved) ? saved : "light";
+}
+
+function applyTheme(themeKey) {
+  const theme = THEME_OPTIONS.find((item) => item.key === themeKey) || THEME_OPTIONS[1];
+  document.body.classList.remove(...THEME_CLASSES);
+  if (theme.className) document.body.classList.add(theme.className);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", theme.meta);
+  localStorage.setItem("tema", theme.key);
 }
 applyTheme(getTheme()); // aplica imediatamente ao carregar
 
@@ -30,6 +45,28 @@ function h(tag, attrs = {}, children = []) {
     el.append(child.nodeType ? child : document.createTextNode(String(child)));
   }
   return el;
+}
+
+function renderThemeOption(theme) {
+  const btn = h("button", {
+    class: "theme-option" + (getTheme() === theme.key ? " theme-active" : ""),
+    type: "button",
+    "data-theme": theme.key,
+    onclick: () => {
+      applyTheme(theme.key);
+      document.querySelectorAll(".theme-option").forEach((button) => {
+        button.classList.toggle("theme-active", button.getAttribute("data-theme") === theme.key);
+      });
+    },
+  }, [
+    h("div", { class: `theme-preview ${theme.preview}` }, [
+      h("div", { class: "tp-topbar" }),
+      h("div", { class: "tp-card" }),
+      h("div", { class: "tp-card tp-card-sm" }),
+    ]),
+    h("div", { class: "theme-label" }, [theme.label]),
+  ]);
+  return btn;
 }
 
 function toast(message) {
@@ -2987,7 +3024,7 @@ async function perfilPage() {
           h("h2", { style: "margin:0" }, ["🎨 Aparência"]),
         ]),
         h("div", { class: "sub", style: "margin-bottom:16px" }, [
-          "Escolha entre o tema escuro (padrão) ou o tema claro.",
+          "Escolha o visual do sistema. Você pode alternar entre os temas quando quiser.",
         ]),
         h("div", { class: "theme-options" }, [
           // Escuro
@@ -3030,6 +3067,7 @@ async function perfilPage() {
             ]);
             return btn;
           })(),
+          ...THEME_OPTIONS.filter((theme) => !["dark", "light"].includes(theme.key)).map(renderThemeOption),
         ]),
       ]),
       // ── Card lembretes ───────────────────────────────────────────────────
