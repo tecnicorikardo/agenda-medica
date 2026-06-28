@@ -2320,7 +2320,7 @@ function openPacienteMenu({ p, waNum, waMsg, onEdit, onDelete }) {
 async function pacientesPage() {
   await ensureMe();
   const q = h("input", { class: "input", placeholder: "Buscar por nome ou telefone..." });
-  const list = h("div", { class: "card" }, ["Carregando..."]);
+  const list = h("div", { class: "patients-list-panel" }, ["Carregando..."]);
   const fileImport = h("input", { type: "file", accept: ".xlsx", style: "display:none" });
   const importStatus = h("div", { class: "import-status", style: "display:none" });
   const sortSelect = h("select", { class: "input patients-sort", "aria-label": "Ordenar pacientes" }, [
@@ -2647,7 +2647,7 @@ async function pacientesPage() {
         ]),
         h("div", { class: "patients-filters", role: "group", "aria-label": "Filtros de pacientes" }, filterButtons),
       ]),
-      h("div", { class: "card col-12" }, [list]),
+      h("div", { class: "card col-12 patients-list-card" }, [list]),
     ]),
   ]);
 

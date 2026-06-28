@@ -4628,6 +4628,41 @@ body.light .billing-plan {
   gap: 5px;
 }
 
+.patients-list-panel {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: color-mix(in srgb, var(--surface) 72%, var(--card));
+}
+
+body.light .patients-toolbar-card,
+body.light .patients-list-card {
+  border-color: #A7D8F5;
+  box-shadow: 0 12px 30px rgba(14, 165, 233, .12);
+}
+
+body.light .patients-list-panel {
+  border-color: #B8DDF2;
+  background: #F8FCFF;
+  box-shadow: inset 0 0 0 1px rgba(14, 165, 233, .05);
+}
+
+body.light .patient-table-row {
+  border-color: #B7DDF2;
+  background: #FFFFFF;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, .05);
+}
+
+body.light .patient-table-row:hover {
+  border-color: #7CC8F2;
+  background: #F3FAFF;
+  box-shadow: 0 8px 22px rgba(14, 165, 233, .12);
+}
+
+body.light .patients-pagination {
+  border-top-color: #B8DDF2;
+}
+
 .patient-table-header,
 .patient-table-row {
   display: grid;
