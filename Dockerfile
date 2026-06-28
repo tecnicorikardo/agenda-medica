@@ -10,6 +10,7 @@ COPY alembic /app/alembic
 COPY backend /app/backend
 COPY frontend /app/frontend
 COPY logo.png /app/logo.png
+COPY fundo-flamengo.svg /app/fundo-flamengo.svg
 
 ENV PYTHONUNBUFFERED=1
 

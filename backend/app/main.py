@@ -45,6 +45,10 @@ def create_app() -> FastAPI:
     def logo() -> FileResponse:
         return FileResponse(path=repo_root / "logo.png")
 
+    @app.get("/assets/fundo-flamengo.svg", include_in_schema=False)
+    def fundo_flamengo() -> FileResponse:
+        return FileResponse(path=repo_root / "fundo-flamengo.svg", media_type="image/svg+xml")
+
     frontend_dir = repo_root / "frontend"
     if frontend_dir.exists():
         app.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
